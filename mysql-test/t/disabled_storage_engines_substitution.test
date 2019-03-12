@@ -1,0 +1,116 @@
+#
+# WL#8594 - Provide an option to reject creation of user tables for specified
+#           storage engines.
+#
+
+# Test SQL statements  'CREATE [TEMPORARY] TABLE', 'ALTER TABLE ... ENGINE'
+# and 'CREATE/ALTER TABLESPACE' shall pass with the warning "Storage engine
+# 'storage engine name' is disabled (Table creation is disallowed.)" for the
+# storage engines specified by disabled-storage-engine option while
+# sql_mode does not specify NO_ENGINE_SUBSTITUTION.
+
+--source include/not_embedded.inc
+
+call mtr.add_suppression("default_storage_engine is set to a disabled storage engine memory.");
+
+--let check_engine= SELECT TABLE_NAME,ENGINE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='t'
+
+SET SESSION sql_mode = 'NO_AUTO_CREATE_USER';
+SHOW VARIABLES LIKE 'sql_mode';
+SHOW VARIABLES LIKE 'disabled_storage_engines';
+--echo
+
+--echo ---------------------
+--echo Enabled default tests
+--echo ---------------------
+SET SESSION default_storage_engine=myisam;
+SHOW VARIABLES LIKE 'default_storage_engine';
+--echo
+
+--echo Test an enabled default engine
+CREATE TABLE t (c int);
+eval $check_engine;
+DROP TABLE t;
+--echo
+
+--echo Test a disabled engine gets substituted to the default
+CREATE TABLE t (c int) ENGINE=memory;
+eval $check_engine;
+DROP TABLE t;
+--echo
+
+--echo Test an invalid and disabled engine gets substituted to the default
+CREATE TABLE t (c int) ENGINE=disabledfake;
+eval $check_engine;
+DROP TABLE t;
+--echo
+
+--echo Test alter table to a disabled engine
+CREATE TABLE t (c int) ENGINE=innodb;
+--error ER_DISABLED_STORAGE_ENGINE
+ALTER TABLE t ENGINE=memory;
+eval $check_engine;
+DROP TABLE t;
+--echo
+
+--echo Test alter table to an invalid and disabled engine
+CREATE TABLE t (c int) ENGINE=innodb;
+ALTER TABLE t ENGINE=disabledfake;
+eval $check_engine;
+DROP TABLE t;
+--echo
+
+
+--echo ----------------------
+--echo Disabled default tests
+--echo ----------------------
+SET SESSION default_storage_engine=memory;
+SHOW WARNINGS;
+SHOW VARIABLES LIKE 'default_storage_engine';
+--echo
+
+--echo Test a disabled default engine
+--error ER_DISABLED_STORAGE_ENGINE
+CREATE TABLE t (c int);
+--echo
+
+--echo Test an invalid engine when the default storage engine is disabled
+--error ER_DISABLED_STORAGE_ENGINE
+CREATE TABLE t (c int) ENGINE=fake;
+SHOW WARNINGS;
+--echo
+
+--echo Test an invalid and disabled engine when the default storage engine is disabled
+--error ER_DISABLED_STORAGE_ENGINE
+CREATE TABLE t (c int) ENGINE=disabledfake;
+SHOW WARNINGS;
+--echo
+
+--echo Test a valid and enabled engine when the default storage engine is disabled 
+CREATE TABLE t (c int) ENGINE=innodb;
+eval $check_engine;
+DROP TABLE t;
+--echo
+
+--echo Test alter table to a disabled engine when the default storage engine is disabled
+CREATE TABLE t (c int) ENGINE=innodb;
+--error ER_DISABLED_STORAGE_ENGINE
+ALTER TABLE t ENGINE=blackhole;
+SHOW WARNINGS;
+eval $check_engine;
+DROP TABLE t;
+--echo
+
+--echo Test alter table to an invalid and disabled engine when the default storage engine is disabled
+CREATE TABLE t (c int) ENGINE=innodb;
+ALTER TABLE t ENGINE=disabledfake;
+eval $check_engine;
+DROP TABLE t;
+--echo
+
+--echo Test alter table to a valid and enabled engine when the default storage engine is disabled
+CREATE TABLE t (c int) ENGINE=innodb;
+ALTER TABLE t ENGINE=myisam;
+eval $check_engine;
+DROP TABLE t;
+--echo

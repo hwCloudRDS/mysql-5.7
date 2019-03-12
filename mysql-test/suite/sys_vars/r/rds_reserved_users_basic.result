@@ -1,0 +1,28 @@
+SET GLOBAL rds_reserved_users='rdsAdmin,rdsBackup,reservedUser';
+show variables like '%rds_reserved_users%';
+Variable_name	Value
+rds_reserved_users	rdsAdmin,rdsBackup,reservedUser
+SET GLOBAL rds_reserved_users=',rdsAdmin,rdsBackup';
+ERROR 42000: Variable 'rds_reserved_users' can't be set to the value of ',rdsAdmin,rdsBackup'
+show variables like '%rds_reserved_users%';
+Variable_name	Value
+rds_reserved_users	rdsAdmin,rdsBackup,reservedUser
+SET GLOBAL rds_reserved_users='rdsAdmin,rdsBackup,';
+ERROR 42000: Variable 'rds_reserved_users' can't be set to the value of 'rdsAdmin,rdsBackup,'
+show variables like '%rds_reserved_users%';
+Variable_name	Value
+rds_reserved_users	rdsAdmin,rdsBackup,reservedUser
+SET GLOBAL rds_reserved_users='rdsAdmin,rds Backup';
+ERROR 42000: Variable 'rds_reserved_users' can't be set to the value of 'rdsAdmin,rds Backup'
+show variables like '%rds_reserved_users%';
+Variable_name	Value
+rds_reserved_users	rdsAdmin,rdsBackup,reservedUser
+SET GLOBAL rds_reserved_users='rdsAdmin,,rdsBackup';
+ERROR 42000: Variable 'rds_reserved_users' can't be set to the value of 'rdsAdmin,,rdsBackup'
+show variables like '%rds_reserved_users%';
+Variable_name	Value
+rds_reserved_users	rdsAdmin,rdsBackup,reservedUser
+SET GLOBAL rds_reserved_users='';
+show variables like '%rds_reserved_users%';
+Variable_name	Value
+rds_reserved_users	

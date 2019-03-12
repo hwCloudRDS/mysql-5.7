@@ -1,0 +1,247 @@
+--source include/have_debug.inc
+--source include/have_debug_sync.inc
+--source include/have_binlog_format_row.inc
+--source include/have_semisync_plugin.inc
+--source include/master-slave.inc
+--source include/install_semisync.inc
+
+call mtr.add_suppression("Read semi-sync reply network error");
+call mtr.add_suppression("SEMISYNC: Forced shutdown. Some updates might not be replicated.");
+call mtr.add_suppression(".*Got an error reading communication packets.*");
+call mtr.add_suppression(".*Have been waiting for Binlog reply.*");
+call mtr.add_suppression(".*Adjust rpl_semi_sync_master_status_notify from.*");
+call mtr.add_suppression(".*TIMESTAMP with implicit DEFAULT value is deprecated.*");
+call mtr.add_suppression(".*Insecure configuration for --secure-file-priv.*");
+call mtr.add_suppression(".*The option innodb (skip-innodb) is deprecated and will be removed in a future release.*");
+call mtr.add_suppression(".*Using innodb_additional_mem_pool_size is DEPRECATED.*");
+call mtr.add_suppression(".*Waiting for semi-sync notification ACK timeout.*");
+call mtr.add_suppression(".*Waiting for semi-sync status notification ACK.*");
+call mtr.add_suppression(".*Stop waiting for semi-sync status notification ACK.*");
+call mtr.add_suppression(".*Semi-sync failed to insert tranx_node for binlog file.*");
+
+--echo [prepare]
+--sync_slave_with_master
+--source include/rpl_connection_master.inc
+SET GLOBAL rpl_semi_sync_master_enabled = 1;
+SET GLOBAL rpl_semi_sync_master_status_notify_enabled = 1;
+SET GLOBAL rpl_semi_sync_master_trace_level=113;
+CREATE TABLE t1(f INT) ENGINE=INNODB;
+SELECT @@GLOBAL.rpl_semi_sync_master_enabled;
+SELECT @@GLOBAL.rpl_semi_sync_master_status_notify_enabled;
+SELECT @@GLOBAL.rpl_semi_sync_master_status_notify_ack;
+SELECT @@GLOBAL.rpl_semi_sync_master_status_notify_timeout;
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status_notify';
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status';
+SET GLOBAL Rpl_semi_sync_master_status_notify_ack = 2;
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status_notify';
+
+--echo 
+--echo test 1: Debug switch off with notify timeout
+--echo
+
+--echo [step 1.1]: Insert data in the master
+--source include/rpl_connection_master.inc
+insert into t1 values(1);
+
+--echo [step 1.2]: Check master data 
+--source include/rpl_connection_master.inc
+select * from t1;
+
+--echo [step 1.3]: Calling switch_off with disable master and notify timout
+--source include/rpl_connection_master.inc
+SET GLOBAL rpl_semi_sync_master_status_notify_timeout = 5;
+SET GLOBAL debug= 'd,simulate_semisync_call_to_switch_off';
+SET GLOBAL rpl_semi_sync_master_enabled = 0;
+
+--echo [step 1.4]: Check master parameters
+--source include/rpl_connection_master.inc
+SELECT @@GLOBAL.rpl_semi_sync_master_enabled;
+SELECT @@GLOBAL.rpl_semi_sync_master_status_notify_enabled;
+SELECT @@GLOBAL.rpl_semi_sync_master_status_notify_ack;
+SELECT @@GLOBAL.rpl_semi_sync_master_status_notify_timeout;
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status_notify';
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status';
+
+--echo [step 1.5]: Restart master
+--source include/rpl_connection_master.inc
+SET GLOBAL innodb_fast_shutdown = 2;
+SET GLOBAL rpl_semi_sync_master_status_notify_shutdown_keep_sync = 1;
+--let $rpl_server_number= 1
+--source include/rpl_restart_server.inc
+SET GLOBAL rpl_semi_sync_master_enabled = 1;
+SET GLOBAL rpl_semi_sync_master_status_notify_enabled = 1;
+SET GLOBAL rpl_semi_sync_master_trace_level=113;
+--sync_slave_with_master
+
+--echo [step 1.6]: Check master parameters
+--source include/rpl_connection_master.inc
+SELECT @@GLOBAL.rpl_semi_sync_master_enabled;
+SELECT @@GLOBAL.rpl_semi_sync_master_status_notify_enabled;
+SELECT @@GLOBAL.rpl_semi_sync_master_status_notify_ack;
+SELECT @@GLOBAL.rpl_semi_sync_master_status_notify_timeout;
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status_notify';
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status';
+SET GLOBAL rpl_semi_sync_master_status_notify_ack = 2;
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status_notify';
+
+--echo
+--echo test 2: Debug switch off with notify ack
+--echo
+
+--echo [step 2.1]: Calling switch_off with memory error simulation
+--source include/rpl_connection_master1.inc
+SET GLOBAL debug= '+d,simulate_semisync_mem_err_call_to_switch_off';
+--send insert into t1 values(21)
+--sleep 2 
+
+--echo [step 2.2]: Check parameters
+--source include/rpl_connection_master.inc
+SHOW GLOBAL VARIABLES LIKE 'rpl_semi_sync_master_status_notify_ack';
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status_notify';
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status';
+
+--echo [step 2.3]: Send notify ack
+--source include/rpl_connection_master.inc
+SET GLOBAL rpl_semi_sync_master_status_notify_ack = 1;
+--sleep 1
+
+--echo [step 2.3]: Check parameters
+--source include/rpl_connection_master.inc
+SELECT @@GLOBAL.rpl_semi_sync_master_timeout;
+SELECT @@GLOBAL.rpl_semi_sync_master_enabled;
+SELECT @@GLOBAL.rpl_semi_sync_master_status_notify_enabled;
+SELECT @@GLOBAL.rpl_semi_sync_master_status_notify_timeout;
+SHOW GLOBAL VARIABLES LIKE 'rpl_semi_sync_master_status_notify_ack';
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status_notify';
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status';
+--connection master1
+--reap
+
+--echo [Step 2.4]: Reset settings
+--source include/rpl_connection_master.inc
+SET GLOBAL debug= '-d,simulate_semisync_mem_err_call_to_switch_off';
+--sleep 1
+
+--echo
+--echo test 3: Debug switch off with disable notify
+--echo
+
+--echo [step 3.1]: Calling switch_off with memory error simulation
+--source include/rpl_connection_master1.inc
+SET GLOBAL debug= '+d,simulate_semisync_mem_err_call_to_switch_off';
+SET GLOBAL debug= '+d,simulate_semisync_switchoff_debug_wait';
+--send insert into t1 values(31)
+--sleep 1 
+
+--echo [step 3.2] Disable notify
+--source include/rpl_connection_master.inc
+SET GLOBAL rpl_semi_sync_master_status_notify_enabled = 0;
+--sleep 1
+
+--echo [step 3.3]: Check parameters
+--source include/rpl_connection_master.inc
+SELECT @@GLOBAL.rpl_semi_sync_master_timeout;
+SELECT @@GLOBAL.rpl_semi_sync_master_enabled;
+SELECT @@GLOBAL.rpl_semi_sync_master_status_notify_enabled;
+SELECT @@GLOBAL.rpl_semi_sync_master_status_notify_timeout;
+SHOW GLOBAL VARIABLES LIKE 'rpl_semi_sync_master_status_notify_ack';
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status_notify';
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status';
+--sleep 1
+--connection master1
+--reap
+
+--echo [Step 3.4]: Reset settings
+--source include/rpl_connection_master.inc
+SET GLOBAL debug= '-d,simulate_semisync_mem_err_call_to_switch_off';
+SET GLOBAL debug= '-d,simulate_semisync_switchoff_debug_wait';
+SET GLOBAL rpl_semi_sync_master_status_notify_enabled = 1;
+--sleep 1
+
+--echo
+--echo test 4: Debug switch off with disable semisync
+--echo
+
+--echo [step 4.1]: Calling switch_off with memory error simulation
+--source include/rpl_connection_master1.inc
+SET GLOBAL debug= '+d,simulate_semisync_mem_err_call_to_switch_off';
+SET GLOBAL debug= '+d,simulate_semisync_switchoff_debug_wait';
+--send insert into t1 values(41)
+--sleep 1
+
+--echo [step 4.2] Disable semisync
+--source include/rpl_connection_master.inc
+SET GLOBAL rpl_semi_sync_master_enabled = 0;
+--sleep 1
+
+--echo [step 4.3]: Check parameters
+--source include/rpl_connection_master.inc
+SELECT @@GLOBAL.rpl_semi_sync_master_timeout;
+SELECT @@GLOBAL.rpl_semi_sync_master_enabled;
+SELECT @@GLOBAL.rpl_semi_sync_master_status_notify_enabled;
+SELECT @@GLOBAL.rpl_semi_sync_master_status_notify_timeout;
+SHOW GLOBAL VARIABLES LIKE 'rpl_semi_sync_master_status_notify_ack';
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status_notify';
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status';
+--sleep 1
+--connection master1
+--reap
+
+--echo [Step 4.4]: Reset settings
+--source include/rpl_connection_master.inc
+SET GLOBAL debug= '-d,simulate_semisync_mem_err_call_to_switch_off';
+SET GLOBAL debug= '-d,simulate_semisync_switchoff_debug_wait';
+SET GLOBAL rpl_semi_sync_master_enabled = 1;
+--sleep 1
+
+--echo
+--echo test 5: Debug switch off with shutdwon
+--echo
+
+--echo [step 5.1]: Debug switch off: calling switch_off
+--source include/rpl_connection_master1.inc
+SET GLOBAL debug= '+d,simulate_semisync_mem_err_call_to_switch_off';
+SET GLOBAL debug= '+d,simulate_semisync_switchoff_debug_wait';
+--send insert into t1 values(51)
+--sleep 1
+
+--echo [step 5.2]: Shudown
+--source include/rpl_connection_master.inc
+SET GLOBAL innodb_fast_shutdown = 2;
+#SET GLOBAL rpl_semi_sync_master_status_notify_shutdown_keep_sync = 1;
+--let $rpl_server_number = 1
+--source include/rpl_stop_server.inc
+--sleep 1
+--connection master1
+--error 0,2013,1317,1307,1306,1334,1305,1034
+--reap
+--echo [step 5.3]: Start
+--let $rpl_server_number = 1
+--source include/rpl_start_server.inc
+--source include/rpl_connection_master.inc
+SET GLOBAL rpl_semi_sync_master_enabled = 1;
+SET GLOBAL rpl_semi_sync_master_status_notify_enabled = 1;
+SET GLOBAL rpl_semi_sync_master_trace_level=113;
+--sync_slave_with_master
+
+--echo [Check]: check status and data in the master
+--source include/rpl_connection_master.inc
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status_notify';
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status';
+SET GLOBAL rpl_semi_sync_master_status_notify_ack = 2;
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status_notify';
+select * from t1;
+
+--echo [Check]: check data in the slave
+--source include/rpl_connection_slave.inc
+--sleep 1
+select * from t1;
+
+--echo [clean]
+--source include/rpl_connection_master.inc
+DROP TABLE t1;
+--source include/sync_slave_sql_with_master.inc
+--source include/rpl_connection_master.inc
+--source include/uninstall_semisync.inc
+--source include/rpl_end.inc
+

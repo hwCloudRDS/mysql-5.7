@@ -1,0 +1,45 @@
+SELECT @@innodb_doublewrite;
+@@innodb_doublewrite
+1
+# Test that the parallel doublewrite is there during the regular server operation
+# Test that a clean shutdown removes the doublewrite file
+# No files should be found:
+# Test that empty innodb_data_home_dir is treated correctly
+# restart:--innodb-data-home-dir=
+# Test that maximum possible parallel doublewrite file is accepted
+# restart
+# Test that too big parallel doublewrite file is diagnosed
+# Test that doublewrite file whose last page is truncated is diagnosed
+# Test that all-0 doublewrite file whose last page is truncated is diagnosed and accepted
+# restart:<hidden args>
+# Test that zero-sized doublewrite file is diagnosed and accepted
+# restart:<hidden args>
+# Test that all-0 or corrupted doublewrite file is accepted when data is OK
+# restart
+start transaction;
+create table t1 (f1 int primary key, f2 blob) engine=innodb;
+insert into t1 values(1, repeat('#',12));
+commit;
+# restart
+select * from t1;
+f1	f2
+1	############
+# restart
+select * from t1;
+f1	f2
+1	############
+drop table t1;
+# Test that innodb_fast_shutdown=2 doesn't delete doublewrite file
+SET GLOBAL innodb_fast_shutdown=2;
+# Test that --innodb_force_recovery=6 succeeds to start with the doublewrite file
+# restart:--innodb-force-recovery=6
+call mtr.add_suppression("InnoDB: Failed to find tablespace for table");
+# Test that --innodb_force_recovery=6 succeeds to start without the doublewrite file
+# restart:--innodb-force-recovery=6
+# Test that --innodb_doublewrite=0, the doublewrite file is not created
+# restart:--skip-innodb_doublewrite
+SELECT @@innodb_doublewrite;
+@@innodb_doublewrite
+0
+# Cleanup
+# restart

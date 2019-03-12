@@ -1,0 +1,8 @@
+SET GLOBAL rds_permission_control=ON;
+show variables like '%rds_permission_control%';
+
+SET GLOBAL rds_permission_control=OFF;
+show variables like '%rds_permission_control%';
+
+SET GLOBAL rds_permission_control=ON;
+show variables like '%rds_permission_control%';

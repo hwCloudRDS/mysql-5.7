@@ -1,0 +1,41 @@
+include/master-slave.inc
+Warnings:
+Note	####	Sending passwords in plain text without SSL/TLS is extremely insecure.
+Note	####	Storing MySQL user name or password information in the master info repository is not secure and is therefore not recommended. Please consider using the USER and PASSWORD connection options for START SLAVE; see the 'START SLAVE Syntax' in the MySQL Manual for more information.
+[connection master]
+include/rpl_set_gtid_mode.inc [on on servers 1,2]
+create table t1(c1 int);
+create table t2(c1 int);
+insert into t1(c1) values (1),(2),(3);
+include/rpl_sync.inc
+SET DEBUG_SYNC= 'waiting_in_the_middle_of_binlog_flush_stage SIGNAL leader WAIT_FOR follower';
+create table t3(c1 int) select * from t1;
+SET DEBUG_SYNC= 'now WAIT_FOR leader';
+SET DEBUG_SYNC= 'wait_as_follower SIGNAL follower';
+insert into t2(c1) values (11),(12),(13);
+include/rpl_sync.inc
+show binlog events in 'master-bin.000004' limit 2, 16;
+Log_name	Pos	Event_type	Server_id	End_log_pos	Info
+#	#	Gtid	#	#	SET @@SESSION.GTID_NEXT= '#:1'
+#	#	Query	#	#	use `test`; create table t1(c1 int)
+#	#	Gtid	#	#	SET @@SESSION.GTID_NEXT= '#:2'
+#	#	Query	#	#	use `test`; create table t2(c1 int)
+#	#	Gtid	#	#	SET @@SESSION.GTID_NEXT= '#:3'
+#	#	Query	#	#	BEGIN
+#	#	Query	#	#	use `test`; insert into t1(c1) values (1),(2),(3)
+#	#	Xid	#	#	COMMIT /* xid=# */
+#	#	Gtid	#	#	SET @@SESSION.GTID_NEXT= '#:4'
+#	#	Query	#	#	use `test`; CREATE TABLE `t3` (
+  `c1` int(11) DEFAULT NULL
+)
+#	#	Gtid	#	#	SET @@SESSION.GTID_NEXT= '#:5'
+#	#	Query	#	#	BEGIN
+#	#	Table_map	#	#	table_id: # (test.t3)
+#	#	Write_rows	#	#	table_id: # flags: STMT_END_F
+#	#	Xid	#	#	COMMIT /* xid=# */
+#	#	Gtid	#	#	SET @@SESSION.GTID_NEXT= '#:6'
+drop table t3;
+drop table t2;
+drop table t1;
+include/rpl_set_gtid_mode.inc [off on servers 1,2]
+include/rpl_end.inc

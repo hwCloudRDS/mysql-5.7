@@ -1,0 +1,79 @@
+#
+# Test 4-Stage binlog group commit and global system dynamic
+# variable combine_engine_log_flush_threshold that controls
+# the behavior. In particular, test he different cases of
+# engine log flush stage leader joining binlog flush stage
+# leader.
+#
+--source include/not_embedded.inc
+--source include/not_valgrind.inc
+--source include/have_log_bin.inc
+--source include/have_debug.inc
+--source include/have_innodb.inc
+
+--echo #
+--echo # 1. S1 leader did enter GC-S0 to flush engine log.
+--echo # 2. S0 leader did not enter GC-S0 and became a follower when entering S1.
+--echo # 3. S1 leader should flush engine log (for S0 leader) and binlog.
+--echo # 4. Crash after flushing binlog by S1 leader, and after recovery
+--echo #    we should see the inserted values from both transactions since
+--echo #    binlog has been flushed.
+DROP TABLE IF EXISTS t1;
+DROP TABLE IF EXISTS t2;
+
+# Create tables
+CREATE TABLE t1(c1 INT) ENGINE= InnoDB;
+CREATE TABLE t2(c1 INT) ENGINE= InnoDB;
+
+# Create another connection
+connect (con1,localhost,root,,);
+connect (con2,localhost,root,,);
+
+# Switch to conn 1 (S1 leader)
+--connection con1
+--exec echo "wait" > $MYSQLTEST_VARDIR/tmp/mysqld.1.expect
+SET GLOBAL combine_engine_log_flush_threshold=1000;
+SET SESSION DEBUG="+d,crash_after_flush_binlog";
+SET DEBUG_SYNC = "process_flush_engine_log_stage_as_leader SIGNAL leader_ready WAIT_FOR flush_englog";
+SET DEBUG_SYNC = "waiting_in_the_middle_of_binlog_flush_stage SIGNAL enter_group_commit WAIT_FOR flush_binlog";
+SET DEBUG_SYNC = "before_flush_engine_log_in_binlog_stage SIGNAL self_flush_englog WAIT_FOR self_flush_englog";
+--send INSERT INTO t1 VALUES(1)
+
+# Sleep a bit before starting conn2 and setting combine_engine_log_flush_threshold=1000
+# to ensure conn1 has sufficient time to go into group commit logic and skip S0
+# with combine_engine_log_flush_threshold=0. Not elegant but works.
+#sleep 1; --NOT NEEDED with "now WAIT_FOR leader_ready" in conn 2
+
+# Switch to conn 2 (S0 leader)
+--connection con2
+SET DEBUG_SYNC = "now WAIT_FOR leader_ready"; # MUST Do this before setting combine_engine_log_flush_threshold
+SET SESSION DEBUG="+d,crash_after_flush_engine_log"; # conn 1 should NOT crash here since it's skipping GC-S0
+SET DEBUG_SYNC = "waiting_to_enter_flush_engine_stage SIGNAL flush_englog WAIT_FOR enter_group_commit";
+SET DEBUG_SYNC = "wait_as_follower SIGNAL flush_binlog";
+SET GLOBAL combine_engine_log_flush_threshold=0;
+# 2013 - CR_SERVER_LOST
+--error 2013
+INSERT INTO t2 VALUES(1);
+
+--source include/wait_until_disconnected.inc
+--enable_reconnect
+--echo # Restart the master server
+--exec echo "restart" > $MYSQLTEST_VARDIR/tmp/mysqld.1.expect
+--source include/wait_until_connected_again.inc
+--disable_reconnect
+
+--echo #
+--echo # Verify that a transaction can be recovered during server
+--echo # recovery from a crash, which happened after flushing it
+--echo # to binary log.
+--echo #
+--let $assert_text= Table t1 must contain 1
+--let $assert_cond= [SELECT count(*) FROM t1 WHERE c1=1] = 1
+--source include/assert.inc
+--let $assert_text= Table t2 must contain 1
+--let $assert_cond= [SELECT count(*) FROM t2 WHERE c1=1] = 1
+--source include/assert.inc
+
+# Cleanup
+DROP TABLE t1, t2;
+

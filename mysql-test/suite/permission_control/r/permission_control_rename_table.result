@@ -1,0 +1,128 @@
+USE mysql;
+DROP TABLE IF EXISTS user_backup,plugin_backup;
+CREATE TABLE user_backup LIKE user;
+INSERT INTO user_backup SELECT * FROM user;
+CREATE TABLE plugin_backup LIKE plugin;
+INSERT INTO plugin_backup SELECT * FROM plugin;
+CREATE USER 'root1'@'%' IDENTIFIED BY '123456';
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, RELOAD, PROCESS, REFERENCES, INDEX, ALTER, SHOW DATABASES, CREATE TEMPORARY TABLES, LOCK TABLES, EXECUTE, REPLICATION SLAVE, REPLICATION CLIENT, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT, TRIGGER ON *.* TO 'root1'@'%' WITH GRANT OPTION;
+CREATE USER 'reserved_user1'@'%' IDENTIFIED BY '123456';
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, RELOAD, PROCESS, REFERENCES, INDEX, ALTER, SHOW DATABASES, CREATE TEMPORARY TABLES, LOCK TABLES, EXECUTE, REPLICATION SLAVE, REPLICATION CLIENT, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT, TRIGGER ON *.* TO 'reserved_user1'@'%' WITH GRANT OPTION;
+CREATE USER 'super'@'%' IDENTIFIED BY '123456';
+GRANT ALL PRIVILEGES ON *.* TO 'super'@'%' WITH GRANT OPTION;
+show variables like 'rds%';
+Variable_name	Value
+rds_permission_control	ON
+rds_reserved_users	reserved_user1,reserved_user2,reserved_user3
+RENAME TABLE user_backup TO user_rename;
+ERROR 42000: Access denied for user 'root1'@'localhost' to database 'mysql'
+show tables;
+Tables_in_mysql
+columns_priv
+db
+engine_cost
+event
+func
+general_log
+gtid_executed
+help_category
+help_keyword
+help_relation
+help_topic
+innodb_index_stats
+innodb_table_stats
+ndb_binlog_index
+plugin
+plugin_backup
+proc
+procs_priv
+proxies_priv
+server_cost
+servers
+slave_master_info
+slave_relay_log_info
+slave_worker_info
+slow_log
+tables_priv
+time_zone
+time_zone_leap_second
+time_zone_name
+time_zone_transition
+time_zone_transition_type
+user
+user_backup
+RENAME TABLE plugin_backup TO plugin_rename;
+show tables;
+Tables_in_mysql
+columns_priv
+db
+engine_cost
+event
+func
+general_log
+gtid_executed
+help_category
+help_keyword
+help_relation
+help_topic
+innodb_index_stats
+innodb_table_stats
+ndb_binlog_index
+plugin
+plugin_rename
+proc
+procs_priv
+proxies_priv
+server_cost
+servers
+slave_master_info
+slave_relay_log_info
+slave_worker_info
+slow_log
+tables_priv
+time_zone
+time_zone_leap_second
+time_zone_name
+time_zone_transition
+time_zone_transition_type
+user
+user_backup
+RENAME TABLE user_backup TO user_rename;
+show tables;
+Tables_in_mysql
+columns_priv
+db
+engine_cost
+event
+func
+general_log
+gtid_executed
+help_category
+help_keyword
+help_relation
+help_topic
+innodb_index_stats
+innodb_table_stats
+ndb_binlog_index
+plugin
+plugin_rename
+proc
+procs_priv
+proxies_priv
+server_cost
+servers
+slave_master_info
+slave_relay_log_info
+slave_worker_info
+slow_log
+tables_priv
+time_zone
+time_zone_leap_second
+time_zone_name
+time_zone_transition
+time_zone_transition_type
+user
+user_rename
+DELETE FROM user;
+INSERT INTO user SELECT * FROM user_rename;
+DROP TABLE IF EXISTS user_rename,plugin_rename;

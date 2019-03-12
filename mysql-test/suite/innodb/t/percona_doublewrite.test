@@ -1,0 +1,131 @@
+#
+# Tests for Percona parallel doublewrite feature.
+# The majority of functionality is already covered by existing tests, most
+# importantly innodb.doublewrite.
+#
+--source include/have_innodb.inc
+--source include/not_embedded.inc
+# Maximum and truncated doublewrite file size tests depend on this
+--source include/have_innodb_16k.inc
+
+# Doublewrite must be enabled for the tests to work
+SELECT @@innodb_doublewrite;
+
+let $MYSQL_DATA_DIR= `select @@datadir`;
+let $MYSQL_BASE_DIR= `select @@basedir`;
+
+let $DOUBLEWRITE_FILE= $MYSQL_DATA_DIR/ib_doublewrite;
+
+let SEARCH_FILE= $MYSQLTEST_VARDIR/log/my_restart.err;
+let $args= --loose-console --core-file > $SEARCH_FILE 2>&1;
+
+--echo # Test that the parallel doublewrite is there during the regular server operation
+file_exists $DOUBLEWRITE_FILE;
+
+--echo # Test that a clean shutdown removes the doublewrite file
+--source include/shutdown_mysqld.inc
+
+--echo # No files should be found:
+list_files $MYSQL_DATA_DIR ib_doublewrite;
+
+--echo # Test that empty innodb_data_home_dir is treated correctly
+--let $restart_parameters= restart:--innodb-data-home-dir=
+--source include/start_mysqld.inc
+file_exists $DOUBLEWRITE_FILE;
+--source include/shutdown_mysqld.inc
+list_files $MYSQL_DATA_DIR ib_doublewrite;
+
+
+--echo # Test that maximum possible parallel doublewrite file is accepted
+--exec perl -e 'print "\0" x 266338304' > $DOUBLEWRITE_FILE
+--let $restart_parameters=restart
+--source include/start_mysqld.inc
+file_exists $DOUBLEWRITE_FILE;
+
+--echo # Test that too big parallel doublewrite file is diagnosed
+--source include/shutdown_mysqld.inc
+--exec perl -e 'print "\0" x 266338305' > $DOUBLEWRITE_FILE
+--error 1
+--exec $MYSQLD_CMD $args
+--let SEARCH_PATTERN= bytes is larger than the maximum size
+--source include/search_pattern_in_file.inc
+--remove_file $SEARCH_FILE
+
+--echo # Test that doublewrite file whose last page is truncated is diagnosed
+--exec perl -e 'print "\1" x 16385' > $DOUBLEWRITE_FILE
+--error 1
+--exec $MYSQLD_CMD $args
+--let SEARCH_PATTERN= bytes is not a multiple of a page size
+--source include/search_pattern_in_file.inc
+--remove_file $SEARCH_FILE
+
+--echo # Test that all-0 doublewrite file whose last page is truncated is diagnosed and accepted
+--exec perl -e 'print "\0" x 16383' > $DOUBLEWRITE_FILE
+--let $restart_hide_args= 1
+--let $restart_parameters=restart:--log-error=$SEARCH_FILE
+--source include/start_mysqld.inc
+--let SEARCH_PATTERN= but it contains only zeroes
+--source include/search_pattern_in_file.inc
+--source include/shutdown_mysqld.inc
+--remove_file $SEARCH_FILE
+
+--echo # Test that zero-sized doublewrite file is diagnosed and accepted
+write_file $DOUBLEWRITE_FILE;
+EOF
+
+--let $restart_hide_args= 1
+--let $restart_parameters=restart:--log-error=$SEARCH_FILE
+--source include/start_mysqld.inc
+--let SEARCH_PATTERN= Parallel doublewrite buffer is zero-sized
+--source include/search_pattern_in_file.inc
+--remove_file $SEARCH_FILE
+
+
+--echo # Test that all-0 or corrupted doublewrite file is accepted when data is OK
+--let $restart_parameters=
+--source include/restart_mysqld.inc
+start transaction;
+create table t1 (f1 int primary key, f2 blob) engine=innodb;
+insert into t1 values(1, repeat('#',12));
+commit;
+--source include/shutdown_mysqld.inc
+--exec perl -e 'print "\0" x 16384' > $DOUBLEWRITE_FILE
+--source include/start_mysqld.inc
+select * from t1;
+--source include/shutdown_mysqld.inc
+--exec perl -e 'print "\3" x 16384' > $DOUBLEWRITE_FILE
+--source include/start_mysqld.inc
+select * from t1;
+drop table t1;
+
+
+--echo # Test that innodb_fast_shutdown=2 doesn't delete doublewrite file
+SET GLOBAL innodb_fast_shutdown=2;
+--source include/shutdown_mysqld.inc
+file_exists $DOUBLEWRITE_FILE;
+
+# This test follows the above innodb_fast_shutdown=2 test to take advtange the doublewrite file
+# that is left behind.
+--echo # Test that --innodb_force_recovery=6 succeeds to start with the doublewrite file
+--let $restart_parameters=restart:--innodb-force-recovery=6
+--source include/start_mysqld.inc
+call mtr.add_suppression("InnoDB: Failed to find tablespace for table");
+--source include/shutdown_mysqld.inc
+file_exists $DOUBLEWRITE_FILE;
+
+--echo # Test that --innodb_force_recovery=6 succeeds to start without the doublewrite file
+--remove_file $DOUBLEWRITE_FILE
+--let $restart_parameters=restart:--innodb-force-recovery=6
+--source include/start_mysqld.inc
+list_files $MYSQL_DATA_DIR ib_doublewrite;
+
+
+--echo # Test that --innodb_doublewrite=0, the doublewrite file is not created
+--let $restart_parameters=restart:--skip-innodb_doublewrite
+--source include/restart_mysqld.inc
+SELECT @@innodb_doublewrite;
+list_files $MYSQL_DATA_DIR ib_doublewrite;
+
+--echo # Cleanup
+--let $restart_parameters=
+--source include/restart_mysqld.inc

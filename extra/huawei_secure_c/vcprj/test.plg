@@ -1,0 +1,102 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: test - Win32 Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "C:\Users\Z00297~1\AppData\Local\Temp\RSPEE.tmp" with contents
+[
+/nologo /MLd /W3 /Gm /GX /ZI /Od /I "../include" /I "../test" /I "../test/comptest" /I "../src" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"Debug/" /Fo"Debug/" /Fd"Debug/" /FD /GZ /Zm1000 /c 
+"D:\project\res-12\SecureCodingTEchnolog Research\Huwei Secure C V100R001C01\Trunk\Code\src\Huawei Secure C V100R001C01SPC004B002\test\comptest\compare_sscanftest_other.c"
+]
+Creating command line "cl.exe @C:\Users\Z00297~1\AppData\Local\Temp\RSPEE.tmp" 
+Creating temporary file "C:\Users\Z00297~1\AppData\Local\Temp\RSPEF.tmp" with contents
+[
+kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /incremental:yes /pdb:"Debug/test.pdb" /debug /machine:I386 /out:"Debug/test.exe" /pdbtype:sept 
+".\Debug\compare_printftest_float.obj"
+".\Debug\compare_printftest_int_d.obj"
+".\Debug\compare_printftest_int_i.obj"
+".\Debug\compare_printftest_other.obj"
+".\Debug\compare_printftest_str_c.obj"
+".\Debug\compare_printftest_str_s.obj"
+".\Debug\compare_sscanftest_float.obj"
+".\Debug\compare_sscanftest_int_d.obj"
+".\Debug\compare_sscanftest_int_i.obj"
+".\Debug\compare_sscanftest_other.obj"
+".\Debug\compare_sscanftest_str_c.obj"
+".\Debug\compare_sscanftest_str_s.obj"
+".\Debug\dopra_comptest.obj"
+".\Debug\fscanf_s.obj"
+".\Debug\fwscanf_s.obj"
+".\Debug\gets_s.obj"
+".\Debug\gets_test.obj"
+".\Debug\mem_perf.obj"
+".\Debug\memcpy_s.obj"
+".\Debug\memcpytest.obj"
+".\Debug\memmove_s.obj"
+".\Debug\memmove_test.obj"
+".\Debug\memset_s.obj"
+".\Debug\memset_s_test.obj"
+".\Debug\pub_funcs.obj"
+".\Debug\scanf_s.obj"
+".\Debug\scanftest.obj"
+".\Debug\securecutil.obj"
+".\Debug\secureinput_a.obj"
+".\Debug\secureinput_w.obj"
+".\Debug\secureprintoutput_a.obj"
+".\Debug\secureprintoutput_w.obj"
+".\Debug\snprintf_s.obj"
+".\Debug\sprintf_s.obj"
+".\Debug\sprintfod.obj"
+".\Debug\sprintftest.obj"
+".\Debug\sscanf_s.obj"
+".\Debug\str_perf.obj"
+".\Debug\strcat_s.obj"
+".\Debug\strcattest.obj"
+".\Debug\strcpy_s.obj"
+".\Debug\strcpytest.obj"
+".\Debug\strncat_s.obj"
+".\Debug\strncpy_s.obj"
+".\Debug\strtok_s.obj"
+".\Debug\strtoktest.obj"
+".\Debug\swprintf_s.obj"
+".\Debug\swscanf_s.obj"
+".\Debug\testmain.obj"
+".\Debug\testperf.obj"
+".\Debug\testutil.obj"
+".\Debug\vfscanf_s.obj"
+".\Debug\vfwscanf_s.obj"
+".\Debug\vscanf_s.obj"
+".\Debug\vsnprintf_s.obj"
+".\Debug\vsprintf_s.obj"
+".\Debug\vsscanf_s.obj"
+".\Debug\vswprintf_s.obj"
+".\Debug\vswscanf_s.obj"
+".\Debug\vwscanf_s.obj"
+".\Debug\wcscat_s.obj"
+".\Debug\wcscpy_s.obj"
+".\Debug\wcsncat_s.obj"
+".\Debug\wcsncpy_s.obj"
+".\Debug\wcstok_s.obj"
+".\Debug\wmemcpy_s.obj"
+".\Debug\wmemmove_s.obj"
+".\Debug\wscanf_s.obj"
+".\Debug\wscanftest.obj"
+".\Debug\swprintftest.obj"
+]
+Creating command line "link.exe @C:\Users\Z00297~1\AppData\Local\Temp\RSPEF.tmp"
+<h3>Output Window</h3>
+Compiling...
+compare_sscanftest_other.c
+d:\project\res-12\securecodingtechnolog research\huwei secure c v100r001c01\trunk\code\src\huawei secure c v100r001c01spc004b002\test\comptest\compare_sscanftest_other.c(65536) : warning C4049: compiler limit : terminating line number emission
+Linking...
+
+
+
+<h3>Results</h3>
+test.exe - 0 error(s), 1 warning(s)
+</pre>
+</body>
+</html>

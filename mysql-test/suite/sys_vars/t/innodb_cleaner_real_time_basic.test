@@ -1,0 +1,107 @@
+#
+# 2017-12-04 - Added
+#
+
+--source include/have_innodb.inc
+
+SET @start_global_value = @@global.innodb_cleaner_real_time;
+SELECT @start_global_value;
+
+#
+# exists as global only
+#
+--echo  Valid values are 'ON' and 'OFF'
+SELECT @@global.innodb_cleaner_real_time in (0, 1);
+SELECT @@global.innodb_cleaner_real_time;
+
+--error ER_INCORRECT_GLOBAL_LOCAL_VAR
+SELECT @@session.innodb_cleaner_real_time;
+SHOW global variables LIKE 'innodb_cleaner_real_time';
+SHOW session variables LIKE 'innodb_cleaner_real_time';
+SELECT * FROM performance_schema.global_variables 
+WHERE variable_name='innodb_cleaner_real_time';
+SELECT * FROM performance_schema.global_variables 
+WHERE variable_name='innodb_cleaner_real_time';
+
+#
+# show that it's read only
+#
+
+--error ER_INCORRECT_GLOBAL_LOCAL_VAR
+SET global innodb_cleaner_real_time=0; 
+--error ER_INCORRECT_GLOBAL_LOCAL_VAR
+SET @@global.innodb_cleaner_real_time=1; 
+--error ER_GLOBAL_VARIABLE
+SET session innodb_large_prefix='OFF';
+--error ER_GLOBAL_VARIABLE
+SET @@session.innodb_stats_on_metadata='ON';
+
+#
+# Check if the value in GLOBAL Table matches value in variable 
+#
+
+SELECT IF(@@GLOBAL.innodb_cleaner_real_time, "ON", "OFF") = VARIABLE_VALUE
+FROM performance_schema.global_variables
+WHERE VARIABLE_NAME='innodb_cleaner_real_time';
+--echo 1 Expected
+
+SELECT COUNT(@@GLOBAL.innodb_cleaner_real_time);
+--echo 1 Expected
+
+SELECT COUNT(VARIABLE_VALUE)
+FROM performance_schema.global_variables
+WHERE VARIABLE_NAME='innodb_cleaner_real_time';
+--echo 1 Expected
+
+#
+# Check if accessing variable with and without GLOBAL point to same variable
+#
+SELECT @@innodb_cleaner_real_time = @@GLOBAL.innodb_cleaner_real_time;
+--echo 1 Expected
+
+#
+# Check if innodb_cleaner_real_time can be accessed with and without @@ sign 
+#
+
+SELECT COUNT(@@innodb_cleaner_real_time);
+--echo 1 Expected
+
+--Error ER_INCORRECT_GLOBAL_LOCAL_VAR
+SELECT COUNT(@@local.innodb_cleaner_real_time);
+
+--Error ER_INCORRECT_GLOBAL_LOCAL_VAR
+SELECT COUNT(@@SESSION.innodb_cleaner_real_time);
+
+SELECT COUNT(@@GLOBAL.innodb_cleaner_real_time);
+--echo 1 Expected
+
+--Error ER_BAD_FIELD_ERROR
+SELECT innodb_cleaner_real_time = @@SESSION.innodb_cleaner_real_time;
+
+
+#
+# Check if innodb_cleaner_real_time takes effect by search error log
+#
+--let $error_log= $MYSQLTEST_VARDIR/log/cleaner_real_time_test.err
+--let SEARCH_FILE= $error_log
+
+--error 0,1
+--remove_file $error_log
+--let $restart_parameters=restart:--innodb_cleaner_real_time=0 --log-error=$error_log
+--let $restart_hide_args= 1
+--source include/restart_mysqld.inc
+SELECT @@global.innodb_cleaner_real_time;
+--let SEARCH_PATTERN= (page cleaner thread priority can be changed\. See the man page of setpriority)|(page_cleaner coordinator nice value)
+--source include/search_pattern_in_file.inc
+
+--error 0,1
+--remove_file $error_log
+--let $restart_parameters=restart:--innodb_cleaner_real_time=1 --log-error=$error_log
+--let $restart_hide_args= 1
+--source include/restart_mysqld.inc
+SELECT @@global.innodb_cleaner_real_time;
+--let SEARCH_PATTERN= (page cleaner thread priority can be changed\. See the man page of sched_setscheduler)|(page_cleaner coordinator SCHED_RR priority)
+--source include/search_pattern_in_file.inc
+
+--let $restart_parameters=restart
+--source include/restart_mysqld.inc

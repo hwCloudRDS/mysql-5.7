@@ -1,0 +1,94 @@
+# Start with threadpool plugin loaded
+# and run a number of tests
+
+# The include statement below is a temp one for tests that are yet to
+#be ported to run with InnoDB,
+#but needs to be kept for tests that would need MyISAM in future.
+# It is needed because of include/common-tests.inc here
+--source include/force_myisam_default.inc
+
+--source include/have_pool_of_threads.inc
+--source include/common-tests.inc
+
+SELECT @@THREADPOOL_SIZE;
+SELECT @@THREADPOOL_MAX_THREADS;
+
+# Test that we cannot have more simultaneous connections than
+# --thread-pool-size
+call mtr.add_suppression("Threadpool could not create additional thread to handle queries");
+
+# First set two connections running, and check that extra connection
+# fail due to --threadpool_max_threads=2
+--connection default
+--let $default_id = `SELECT CONNECTION_ID()`
+--send SELECT SLEEP(5)
+
+--connect(con2,localhost,root,,)
+--connection con2
+--let $con2_id = `SELECT CONNECTION_ID()`
+--send SELECT SLEEP(50000)
+--sleep  2.5
+
+--disable_abort_on_error
+--disable_result_log
+--disable_query_log
+--connect(con3,localhost,root,,)
+--enable_query_log
+--enable_result_log
+--enable_abort_on_error
+--let $error = $mysql_errno
+if (!$error)
+{
+  --echo # -- Error: managed to establish more than --thread_pool_max_threads connections
+}
+if ($error)
+{
+  --echo # -- Success: more than --thread_pool_max_threads normal connections not possible
+}
+
+--connection default
+--reap
+--let @ignore = `SELECT @ID := $con2_id`
+KILL QUERY @id;
+--connection con2
+--reap
+
+# Test wait_timeout works correctly
+--connection default
+SHOW STATUS LIKE 'aborted_clients';
+--connection con2
+--disable_reconnect
+SET SESSION WAIT_TIMEOUT = 1;
+--connection default
+--sleep 1.5
+SHOW STATUS LIKE 'aborted_clients';
+--disconnect con2
+
+# Test listener can handle multiple results from epoll
+--connect(con2,localhost,root,,)
+--connect(con3,localhost,root,,)
+--connect(con4,localhost,root,,)
+--connect(con5,localhost,root,,)
+--connection default
+--send SELECT sleep(5)
+--connection con2
+--send SELECT sleep(5)
+--connection con3
+--send SELECT sleep(5)
+--connection con4
+--send SELECT 1
+--connection con5
+--send SELECT 1
+--reap
+--connection con4
+--reap
+--connection con3
+--reap
+--connection con2
+--reap
+--connection default
+--reap
+--disconnect con2
+--disconnect con3
+--disconnect con4
+--disconnect con5

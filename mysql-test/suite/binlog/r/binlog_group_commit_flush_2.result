@@ -1,0 +1,31 @@
+#
+# 1. S1 leader did NOT enter GC-S0 to flush engine log.
+# 2. S0 leader did enter GC-S0 and became a follower when entering S1.
+# 3. S1 leader should still flush engine log (for itself).
+# 4. Crash after flushing engine log by S1 leader, and after recovery
+#    we should not see the inserted value from either transactions
+#    since binlog has not been flushed/sync'ed yet.
+CREATE TABLE t1(c1 INT) ENGINE= InnoDB;
+CREATE TABLE t2(c1 INT) ENGINE= InnoDB;
+SET GLOBAL combine_engine_log_flush_threshold=0;
+SET SESSION DEBUG="+d,process_flush_engine_log_stage_as_leader,crash_after_flush_engine_log_in_binlog_stage";
+SET DEBUG_SYNC = "waiting_to_enter_flush_binlog_stage SIGNAL leader_ready";
+SET DEBUG_SYNC = "waiting_in_the_middle_of_binlog_flush_stage SIGNAL enter_gc WAIT_FOR flush_englog_in_s1";
+SET DEBUG_SYNC = "before_flush_engine_log_in_binlog_stage SIGNAL self_flush_englog WAIT_FOR self_flush_englog";
+INSERT INTO t1 VALUES(1);
+SET DEBUG_SYNC = "now WAIT_FOR leader_ready";
+SET DEBUG_SYNC = "waiting_to_enter_flush_engine_stage SIGNAL process_s0 WAIT_FOR enter_gc";
+SET DEBUG_SYNC = "process_flush_engine_log_stage_as_leader WAIT_FOR process_s0";
+SET DEBUG_SYNC = "wait_as_follower SIGNAL flush_englog_in_s1";
+SET GLOBAL combine_engine_log_flush_threshold=1000;
+INSERT INTO t2 VALUES(1);
+ERROR HY000: Lost connection to MySQL server during query
+# Restart the master server
+#
+# Verify that the transactions can not be recovered during server
+# recovery from a crash, which happened after flushing it to
+# InnoDB redo log and before flushing it to binary log.
+#
+include/assert.inc [Table t1 must not contain 1]
+include/assert.inc [Table t2 must not contain 1]
+DROP TABLE t1, t2;

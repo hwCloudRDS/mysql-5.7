@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSPY v5 U (http://www.xmlspy.com) by et8 (et8) -->
+<CommunicationModel xmlns="http://www.huawei.com/m2000/med/commwork" xmlns:def="http://www.huawei.com/m2000/med" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.huawei.com/m2000/med/commwork
+../Schema/CommunicationModel.xsd">
+        <Netconf name="netconf" port="830" sshChannelType="subsystem" bufSize="64" usessh="true" gatewayconnection="common">
+                <only name="only" gatewayconnection="common" timeOut="60" shkTimespan="60" shkTimeoutTimes="3" loginType="RVI" protocolTag="O&amp;M" needSync="false"/>
+        </Netconf>
+        <NBMML name="transparent" port="6000" usessh="true" sshChannelType="subsystem" bufSize="64" gatewayconnection="common">     
+                 <Maintain name="only" gatewayconnection="common" timeOut="60" shkTimespan="60" shkTimeoutTimes="3" loginType="RVI" protocolTag="O&amp;M" needSync="false"/>        
+         </NBMML>
+</CommunicationModel>
+
+

@@ -1,0 +1,57 @@
+#
+# Show the global value;
+#
+SELECT @@global.combine_engine_log_flush_threshold;
+SHOW GLOBAL VARIABLES LIKE 'combine_engine_log_flush_threshold';
+SELECT * FROM performance_schema.global_variables WHERE variable_name='combine_engine_log_flush_threshold';
+
+--echo #It is not a session variable.
+--error ER_INCORRECT_GLOBAL_LOCAL_VAR
+SELECT @@session.combine_engine_log_flush_threshold;
+SHOW SESSION VARIABLES LIKE 'combine_engine_log_flush_threshold';
+SELECT * FROM performance_schema.session_variables WHERE variable_name='combine_engine_log_flush_threshold';
+--error ER_GLOBAL_VARIABLE
+SET SESSION combine_engine_log_flush_threshold= 1;
+
+--echo #Test setting the variable to various values.
+
+--echo #Integer values, with range [0 - 16384]
+SET GLOBAL combine_engine_log_flush_threshold= 0;
+SELECT @@global.combine_engine_log_flush_threshold;
+
+SET GLOBAL combine_engine_log_flush_threshold= 1;
+SELECT @@global.combine_engine_log_flush_threshold;
+
+SET GLOBAL combine_engine_log_flush_threshold= 1000;
+SELECT @@global.combine_engine_log_flush_threshold;
+
+SET GLOBAL combine_engine_log_flush_threshold= 16384;
+SELECT @@global.combine_engine_log_flush_threshold;
+
+--echo #Test for invalid value larger than max allowable value.
+--echo #Should truncate to max allowable value.
+--enable_warnings
+#--error 1292
+SET GLOBAL combine_engine_log_flush_threshold= 16385;
+--disable_warnings
+SELECT @@global.combine_engine_log_flush_threshold;
+
+--echo #Test for invalid value smaller than min allowable value.
+--echo #Should set to min allowable value.
+--enable_warnings
+#--error 1292
+SET GLOBAL combine_engine_log_flush_threshold= -1;
+SELECT @@global.combine_engine_log_flush_threshold;
+--disable_warnings
+
+--echo #Test for invalid statement for setting the
+--echo #global variable.
+--error ER_GLOBAL_VARIABLE
+SET combine_engine_log_flush_threshold= 1;
+
+--echo #Test for DEFAULT value.
+SET GLOBAL combine_engine_log_flush_threshold= DEFAULT;
+SELECT @@global.combine_engine_log_flush_threshold;
+
+#--echo #Fetches the current global value for the variable.
+#SELECT @@combine_engine_log_flush_threshold;

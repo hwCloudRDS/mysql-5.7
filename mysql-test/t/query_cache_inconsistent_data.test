@@ -1,0 +1,164 @@
+# query cache (i.e. result cache) can return inconsistent data
+--source include/have_debug_sync.inc
+--disable_warnings
+drop table if exists t1;
+drop table if exists t2;
+--enable_warnings
+
+create table t1(c1 int) engine=innodb;
+create table t2(c1 int) engine=innodb;
+
+connect (con1, localhost, root);
+connect (con2, localhost, root);
+
+--enable_connect_log
+connection con1;
+start transaction;
+--echo # read-view opened. the result is cached (A)
+select * from t1;
+
+connection con2;
+--echo # The cached result (A) is invalidated. OK so far.
+insert into t1 values(1);
+
+connection con1;
+--echo # transaction ID assigned (B)
+insert into t2 values(1);
+--echo # this returns 0 row, due to transaction isolation semantics.
+--echo # this query result was cached, but it shouldn't have. (C)
+select * from t1;
+
+connection con2;
+start transaction;
+--echo # Before fixed: WRONG. This should return 1 row, but it returns 0 row instead
+select * from t1;
+commit;
+--echo # correct result. 1 row. This doesn't match the cache because auto-commit SELECT
+select * from t1;
+start transaction;
+--echo # Before fixed: WRONG again. the result was retrieved from query cache produced by (C)
+select * from t1;
+
+disconnect con1;
+disconnect con2;
+--source include/wait_until_disconnected.inc
+
+connection default;
+
+drop table if exists t1;
+drop table if exists t2;
+
+
+# UR query result is cached, then RR query can return uncommited data.
+create table t1(c1 int) engine=innodb;
+connect (con1, localhost, root);
+connect (con2, localhost, root);
+
+connection con1;
+set transaction isolation level read uncommitted;
+SET DEBUG_SYNC= 'wait_after_query_cache_store_query SIGNAL store WAIT_FOR validate';
+send select * from t1;
+
+connection con2;
+# start transaction;
+SET DEBUG_SYNC= 'now WAIT_FOR store';
+SET DEBUG_SYNC= 'wait_before_query_cache_invalidate SIGNAL validate WAIT_FOR insert';
+send insert into t1 values(1);
+
+connection con1;
+reap;
+set transaction isolation level repeatable read;
+--echo # Before fixed:
+--echo # This query runs in default RR mode, but it hit the cache and returns uncommited data
+select * from t1;
+SET DEBUG_SYNC= 'now SIGNAL insert';
+
+connection con2;
+reap;
+
+disconnect con1;
+disconnect con2;
+--source include/wait_until_disconnected.inc
+
+connection default;
+drop table if exists t1;
+
+
+# result cache can return "too new" data when a transaction 
+# is supposed to see old version
+--disable_warnings
+set @save_query_cache_size=@@global.query_cache_size; 
+--enable_warnings
+set @save_table_open_cache=@@global.table_open_cache;
+set @save_table_definition_cache=@@global.table_definition_cache;
+set @save_innodb_stats_auto_recalc=@@global.innodb_stats_auto_recalc;
+
+--disable_warnings
+set @@global.query_cache_size=268435456;
+--enable_warnings
+--echo # This limits the number of opened files
+set @@global.table_open_cache=400;
+--echo # This is a soft limit on InnDB dictionary cache size
+set @@global.table_definition_cache=400;
+--echo # get statistics collection thread out of way
+set @@global.innodb_stats_auto_recalc=0;
+
+create table t1(c1 int) engine=innodb;
+let $i= 500;
+--echo # create $i tables, from l1 to l500;
+while ($i)
+{
+  eval create table l$i(c1 int) engine=innodb;
+  dec $i;
+}
+
+connect (con1, localhost, root);
+connect (con2, localhost, root);
+
+connection con1;
+start transaction;
+--echo # read view open
+select * from t1;
+
+connection con2;
+insert into t1 values(1);
+start transaction;
+--echo # return 1 row, result is cached
+select * from t1;
+commit;
+
+let $i= 500;
+--echo # select from the $i tables
+--echo # the purpose is to get t1 evicted from dictionary cache
+while ($i)
+{
+  eval select * from l$i;
+  dec $i;
+}
+--echo # Wait to ensure the evicition is complete
+select sleep(60);
+
+connection con1;
+--echo # Before fixed: WRONG--it returns 1 row
+--echo # this should have returned 0 row because the transaction should see the old version.
+select * from t1;
+
+disconnect con1;
+disconnect con2;
+--source include/wait_until_disconnected.inc
+
+connection default;
+drop table if exists t1;
+let $i= 500;
+--echo # $i drop;
+--disable_query_log
+while ($i)
+{
+  eval drop table if exists l$i;
+  dec $i;
+}
+--disable_warnings
+set @@global.query_cache_size=@save_query_cache_size;
+set @@global.table_open_cache=@save_table_open_cache;
+set @@global.table_definition_cache=@save_table_definition_cache;
+set @@global.innodb_stats_auto_recalc=@save_innodb_stats_auto_recalc;

@@ -1,0 +1,60 @@
+--source include/have_binlog_format_mixed_or_row.inc
+--source include/master-slave.inc
+
+--let $rpl_gtid_mode= on
+--let $rpl_set_enforce_gtid_consistency= 1
+--source include/rpl_set_gtid_mode.inc
+
+# for rpl_sync.inc
+--let $use_gtids= 1
+
+--echo
+--echo Validate env
+--echo ------------
+connection master;
+show variables like 'gtid_mode';
+show variables like 'enforce_gtid_consistency';
+show variables like 'gtid_next';
+connection slave;
+show variables like 'gtid_mode';
+
+--echo
+--echo Setup data
+--echo ----------
+connection master;
+create table t1(c1 int);
+insert into t1(c1) values (1),(2),(3);
+--source include/rpl_sync.inc
+
+--echo
+--echo Test 1: CTS is allowed
+--echo ----------------------
+connection master;
+create table t2(c1 int) select * from t1;
+--source include/rpl_sync.inc
+connection slave;
+select * from t2;
+
+--echo
+--echo Test 2: CTS blocked for tmp table in a transaction
+--echo --------------------------------------------------
+connection master;
+begin;
+--error ER_GTID_UNSAFE_CREATE_DROP_TEMPORARY_TABLE_IN_TRANSACTION
+create temporary table tt(c1 int) select * from t1;
+rollback;
+--source include/rpl_sync.inc
+
+--echo
+--echo Clean up
+--echo --------
+connection master;
+drop table t2;
+drop table t1;
+--source include/rpl_sync.inc
+
+--let $rpl_gtid_mode= off
+--let $rpl_set_enforce_gtid_consistency= 0
+--source include/rpl_set_gtid_mode.inc
+--let $rpl_skip_sync= 1
+--source include/rpl_end.inc

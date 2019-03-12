@@ -1,0 +1,336 @@
+include/master-slave.inc
+Warnings:
+Note	####	Sending passwords in plain text without SSL/TLS is extremely insecure.
+Note	####	Storing MySQL user name or password information in the master info repository is not secure and is therefore not recommended. Please consider using the USER and PASSWORD connection options for START SLAVE; see the 'START SLAVE Syntax' in the MySQL Manual for more information.
+[connection master]
+include/install_semisync.inc
+call mtr.add_suppression("Read semi-sync reply network error");
+call mtr.add_suppression("SEMISYNC: Forced shutdown. Some updates might not be replicated.");
+call mtr.add_suppression(".*Got an error reading communication packets.*");
+call mtr.add_suppression(".*Have been waiting for Binlog reply.*");
+call mtr.add_suppression(".*Adjust rpl_semi_sync_master_status_notify from.*");
+call mtr.add_suppression(".*TIMESTAMP with implicit DEFAULT value is deprecated.*");
+call mtr.add_suppression(".*Insecure configuration for --secure-file-priv.*");
+call mtr.add_suppression(".*The option innodb (skip-innodb) is deprecated and will be removed in a future release.*");
+call mtr.add_suppression(".*Using innodb_additional_mem_pool_size is DEPRECATED.*");
+call mtr.add_suppression(".*Waiting for semi-sync notification ACK timeout.*");
+call mtr.add_suppression(".*Waiting for semi-sync status notification ACK.*");
+call mtr.add_suppression(".*Stop waiting for semi-sync status notification ACK.*");
+call mtr.add_suppression(".*Semi-sync failed to insert tranx_node for binlog file.*");
+call mtr.add_suppression(".*SEMISYNC: Shutdown. Stop waiting for semi-sync status notification.*");
+call mtr.add_suppression(".*Run function 'after_flush' in plugin 'rpl_semi_sync_master' failed.*");
+call mtr.add_suppression(".*Semi-sync detected shutdown while waiting ACK and it is required to abort to keep semi-sync slave synced.*");
+call mtr.add_suppression(".*Keep semi-sync slave synced on shutdown: Aborting the server and not allow automatic restart.*");
+call mtr.add_suppression(".*Semi-sync status notification was disable - Not allow to set rpl_semi_sync_master_status_notify.*");
+call mtr.add_suppression(".*Not allow to set rpl_semi_sync_master_status_notify form.*");
+call mtr.add_suppression(".*Enable semi-sync status notification - Semi-sync is not enabled.*");
+call mtr.add_suppression(".*Run function 'after_sync' in plugin 'rpl_semi_sync_master' failed.*");
+[prepare]
+[connection master]
+SET GLOBAL rpl_semi_sync_master_enabled = 1;
+SET GLOBAL rpl_semi_sync_master_status_notify_enabled = 1;
+SET GLOBAL rpl_semi_sync_master_trace_level = 113;
+SET GLOBAL rpl_semi_sync_master_timeout = 100;
+CREATE TABLE t1(f INT) ENGINE=INNODB;
+SELECT @@GLOBAL.rpl_semi_sync_master_enabled;
+@@GLOBAL.rpl_semi_sync_master_enabled
+1
+SELECT @@GLOBAL.rpl_semi_sync_master_status_notify_enabled;
+@@GLOBAL.rpl_semi_sync_master_status_notify_enabled
+1
+SELECT @@GLOBAL.rpl_semi_sync_master_status_notify_ack;
+@@GLOBAL.rpl_semi_sync_master_status_notify_ack
+0
+SELECT @@GLOBAL.rpl_semi_sync_master_status_notify_timeout;
+@@GLOBAL.rpl_semi_sync_master_status_notify_timeout
+0
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status_notify';
+Variable_name	Value
+Rpl_semi_sync_master_status_notify	2
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status';
+Variable_name	Value
+Rpl_semi_sync_master_status	ON
+SET GLOBAL Rpl_semi_sync_master_status_notify_ack = 2;
+SET GLOBAL rpl_semi_sync_master_status_notify_shutdown_keep_sync = 1;
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status_notify';
+Variable_name	Value
+Rpl_semi_sync_master_status_notify	0
+
+test 1: Wait for notify ACK - Slave lost and connect back
+
+[step 1.1]: Insert data in the master
+[connection master]
+insert into t1 values(10);
+[step 1.2]: Check master data 
+[connection master]
+select * from t1;
+f
+10
+[step 1.3]: stop slave
+[connection slave]
+stop slave;
+[step 1.4]: Insert data in the master (Slave stopped)
+[connection master1]
+insert into t1 values(11);
+[step 1.5]: start slave
+[connection slave]
+start slave;
+[step 1.6]: Check master data
+[connection master]
+SHOW GLOBAL VARIABLES LIKE '%semi_sync_master_statu%';
+Variable_name	Value
+rpl_semi_sync_master_status_notify_ack	0
+rpl_semi_sync_master_status_notify_enabled	ON
+rpl_semi_sync_master_status_notify_shutdown_keep_sync	ON
+rpl_semi_sync_master_status_notify_timeout	0
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_statu%';
+Variable_name	Value
+Rpl_semi_sync_master_status	ON
+Rpl_semi_sync_master_status_notify	2
+SET GLOBAL Rpl_semi_sync_master_status_notify_ack = 2;
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status_notify';
+Variable_name	Value
+Rpl_semi_sync_master_status_notify	0
+select * from t1;
+f
+10
+11
+[step 1.7]: Check slave data
+[connection slave]
+select * from t1;
+f
+10
+11
+
+test 2: Wait for notify ACK - Notify disabled and enabled
+
+[step 2.1]: stop slave
+[connection slave]
+stop slave;
+[step 2.2]: Simulate debug wait
+[connection master]
+SET GLOBAL debug= 'd,simulate_semisync_notify_ack_debug_wait';
+[step 2.3]: Insert data in the master (Slave stopped)
+[connection master1]
+insert into t1 values(12);
+[step 2.4]: disable notify (Slave stopped)
+[connection master]
+SET GLOBAL rpl_semi_sync_master_status_notify_enabled = 0;
+[step 2.4]: enable notify (Slave stopped)
+[connection master]
+SET GLOBAL rpl_semi_sync_master_status_notify_enabled = 1;
+[step 2.5]: start slave
+[connection slave]
+start slave;
+[step 2.6] Check master status and data
+[connection master]
+SET GLOBAL debug= '-d,simulate_semisync_notify_ack_debug_wait';
+SHOW GLOBAL VARIABLES LIKE '%semi_sync_master_statu%';
+Variable_name	Value
+rpl_semi_sync_master_status_notify_ack	0
+rpl_semi_sync_master_status_notify_enabled	ON
+rpl_semi_sync_master_status_notify_shutdown_keep_sync	ON
+rpl_semi_sync_master_status_notify_timeout	0
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_statu%';
+Variable_name	Value
+Rpl_semi_sync_master_status	ON
+Rpl_semi_sync_master_status_notify	2
+SET GLOBAL Rpl_semi_sync_master_status_notify_ack = 2;
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status_notify';
+Variable_name	Value
+Rpl_semi_sync_master_status_notify	0
+select * from t1;
+f
+10
+11
+12
+
+test 3: Wait for notify ACK - semisync disabled and enabled
+
+[step 3.1]: stop slave
+[connection slave]
+stop slave;
+[step 3.2]: Insert data in the master (Slave stopped)
+[connection master1]
+insert into t1 values(13);
+[step 3.3]: disable semisync (Slave stopped)
+[connection master]
+SET GLOBAL rpl_semi_sync_master_enabled = 0;
+[step 3.4]: enable semisync (Slave stopped)
+[connection master]
+SET GLOBAL rpl_semi_sync_master_enabled = 1;
+[step 3.5]: start slave
+[connection slave]
+start slave;
+[step 3.6] Check master status and data
+[connection master]
+SHOW GLOBAL VARIABLES LIKE '%semi_sync_master_statu%';
+Variable_name	Value
+rpl_semi_sync_master_status_notify_ack	0
+rpl_semi_sync_master_status_notify_enabled	ON
+rpl_semi_sync_master_status_notify_shutdown_keep_sync	ON
+rpl_semi_sync_master_status_notify_timeout	0
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_statu%';
+Variable_name	Value
+Rpl_semi_sync_master_status	ON
+Rpl_semi_sync_master_status_notify	2
+SET GLOBAL Rpl_semi_sync_master_status_notify_ack = 2;
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status_notify';
+Variable_name	Value
+Rpl_semi_sync_master_status_notify	0
+select * from t1;
+f
+10
+11
+12
+13
+
+test 4: Notify ACK received but slave connected back
+
+[step 4.1]: stop slave
+[connection slave]
+stop slave;
+[step 4.2]: Insert data in the master (Slave stopped)
+[connection master1]
+insert into t1 values(14);
+[step 4.3]: Debug wait after receiving notify ack
+[connection master]
+SET GLOBAL debug= 'd,simulate_semisync_notify_ack_received_debug_wait';
+SET GLOBAL Rpl_semi_sync_master_status_notify_ack = 1;
+[step 4.4]: start slave
+[connection slave]
+start slave;
+[step 4.5] Check master status and data
+[connection master]
+SET GLOBAL debug= '-d,simulate_semisync_notify_ack_received_debug_wait';
+SHOW GLOBAL VARIABLES LIKE '%semi_sync_master_statu%';
+Variable_name	Value
+rpl_semi_sync_master_status_notify_ack	0
+rpl_semi_sync_master_status_notify_enabled	ON
+rpl_semi_sync_master_status_notify_shutdown_keep_sync	ON
+rpl_semi_sync_master_status_notify_timeout	0
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_statu%';
+Variable_name	Value
+Rpl_semi_sync_master_status	ON
+Rpl_semi_sync_master_status_notify	2
+SET GLOBAL Rpl_semi_sync_master_status_notify_ack = 2;
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status_notify';
+Variable_name	Value
+Rpl_semi_sync_master_status_notify	0
+select * from t1;
+f
+10
+11
+12
+13
+14
+
+test 5: Notify ACK received but semisync disabled
+
+[step 5.1]: stop slave
+[connection slave]
+stop slave;
+[step 5.2]: Insert data in the master (Slave stopped)
+[connection master1]
+insert into t1 values(15);
+[step 5.3]: Debug wait after receiving notify ack
+[connection master]
+SET GLOBAL debug= 'd,simulate_semisync_notify_ack_received_debug_wait';
+SET GLOBAL Rpl_semi_sync_master_status_notify_ack = 1;
+[step 5.4]: Disable semisync (Slave stopped)
+[connection master]
+SET GLOBAL rpl_semi_sync_master_enabled = 0;
+SET GLOBAL rpl_semi_sync_master_status_notify_enabled = 0;
+[step 5.5]: start slave
+[connection slave]
+start slave;
+[step 5.6] Check master status and data
+[connection master]
+SET GLOBAL debug= '-d,simulate_semisync_notify_ack_received_debug_wait';
+SET GLOBAL rpl_semi_sync_master_status_notify_enabled = 1;
+SET GLOBAL rpl_semi_sync_master_enabled = 1;
+SHOW GLOBAL VARIABLES LIKE '%semi_sync_master_statu%';
+Variable_name	Value
+rpl_semi_sync_master_status_notify_ack	0
+rpl_semi_sync_master_status_notify_enabled	ON
+rpl_semi_sync_master_status_notify_shutdown_keep_sync	ON
+rpl_semi_sync_master_status_notify_timeout	0
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_statu%';
+Variable_name	Value
+Rpl_semi_sync_master_status	ON
+Rpl_semi_sync_master_status_notify	2
+SET GLOBAL Rpl_semi_sync_master_status_notify_ack = 2;
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status_notify';
+Variable_name	Value
+Rpl_semi_sync_master_status_notify	0
+select * from t1;
+f
+10
+11
+12
+13
+14
+15
+
+test 6: Shutdown when waiting notify ACK
+
+[step 6.1]: stop slave
+[connection slave]
+stop slave;
+[step 6.2]: Insert data in the master (Slave stopped)
+[connection master1]
+insert into t1 values(16);
+[step 6.3]: Master shutdown
+[connection master]
+SET GLOBAL innodb_fast_shutdown = 2;
+include/rpl_stop_server.inc [server_number=1]
+[step 6.4]: Master start
+include/rpl_start_server.inc [server_number=1]
+[connection master]
+SET GLOBAL rpl_semi_sync_master_enabled = 1;
+SET GLOBAL rpl_semi_sync_master_status_notify_enabled = 1;
+SET GLOBAL rpl_semi_sync_master_trace_level=113;
+[step 6.5]: start slave
+[connection slave]
+start slave;
+[step 6.6]: check status and data in the master
+[connection master]
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status_notify';
+Variable_name	Value
+Rpl_semi_sync_master_status_notify	2
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status';
+Variable_name	Value
+Rpl_semi_sync_master_status	ON
+SET GLOBAL rpl_semi_sync_master_status_notify_ack = 2;
+SHOW GLOBAL STATUS LIKE 'Rpl_semi_sync_master_status_notify';
+Variable_name	Value
+Rpl_semi_sync_master_status_notify	0
+select * from t1;
+f
+10
+11
+12
+13
+14
+15
+16
+[step 6.7]: check data in the slave
+[connection slave]
+select * from t1;
+f
+10
+11
+12
+13
+14
+15
+16
+include/assert_grep.inc [Semi-sync detected shutdown while waiting ACK]
+Pattern found.
+[clean]
+[connection master]
+DROP TABLE t1;
+include/sync_slave_sql_with_master.inc
+[connection master]
+include/uninstall_semisync.inc
+include/rpl_end.inc

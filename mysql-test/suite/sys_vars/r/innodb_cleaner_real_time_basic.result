@@ -1,0 +1,78 @@
+SET @start_global_value = @@global.innodb_cleaner_real_time;
+SELECT @start_global_value;
+@start_global_value
+1
+Valid values are 'ON' and 'OFF'
+SELECT @@global.innodb_cleaner_real_time in (0, 1);
+@@global.innodb_cleaner_real_time in (0, 1)
+1
+SELECT @@global.innodb_cleaner_real_time;
+@@global.innodb_cleaner_real_time
+1
+SELECT @@session.innodb_cleaner_real_time;
+ERROR HY000: Variable 'innodb_cleaner_real_time' is a GLOBAL variable
+SHOW global variables LIKE 'innodb_cleaner_real_time';
+Variable_name	Value
+innodb_cleaner_real_time	ON
+SHOW session variables LIKE 'innodb_cleaner_real_time';
+Variable_name	Value
+innodb_cleaner_real_time	ON
+SELECT * FROM performance_schema.global_variables 
+WHERE variable_name='innodb_cleaner_real_time';
+VARIABLE_NAME	VARIABLE_VALUE
+innodb_cleaner_real_time	ON
+SELECT * FROM performance_schema.global_variables 
+WHERE variable_name='innodb_cleaner_real_time';
+VARIABLE_NAME	VARIABLE_VALUE
+innodb_cleaner_real_time	ON
+SET global innodb_cleaner_real_time=0;
+ERROR HY000: Variable 'innodb_cleaner_real_time' is a read only variable
+SET @@global.innodb_cleaner_real_time=1;
+ERROR HY000: Variable 'innodb_cleaner_real_time' is a read only variable
+SET session innodb_large_prefix='OFF';
+ERROR HY000: Variable 'innodb_large_prefix' is a GLOBAL variable and should be set with SET GLOBAL
+SET @@session.innodb_stats_on_metadata='ON';
+ERROR HY000: Variable 'innodb_stats_on_metadata' is a GLOBAL variable and should be set with SET GLOBAL
+SELECT IF(@@GLOBAL.innodb_cleaner_real_time, "ON", "OFF") = VARIABLE_VALUE
+FROM performance_schema.global_variables
+WHERE VARIABLE_NAME='innodb_cleaner_real_time';
+IF(@@GLOBAL.innodb_cleaner_real_time, "ON", "OFF") = VARIABLE_VALUE
+1
+1 Expected
+SELECT COUNT(@@GLOBAL.innodb_cleaner_real_time);
+COUNT(@@GLOBAL.innodb_cleaner_real_time)
+1
+1 Expected
+SELECT COUNT(VARIABLE_VALUE)
+FROM performance_schema.global_variables
+WHERE VARIABLE_NAME='innodb_cleaner_real_time';
+COUNT(VARIABLE_VALUE)
+1
+1 Expected
+SELECT @@innodb_cleaner_real_time = @@GLOBAL.innodb_cleaner_real_time;
+@@innodb_cleaner_real_time = @@GLOBAL.innodb_cleaner_real_time
+1
+1 Expected
+SELECT COUNT(@@innodb_cleaner_real_time);
+COUNT(@@innodb_cleaner_real_time)
+1
+1 Expected
+SELECT COUNT(@@local.innodb_cleaner_real_time);
+ERROR HY000: Variable 'innodb_cleaner_real_time' is a GLOBAL variable
+SELECT COUNT(@@SESSION.innodb_cleaner_real_time);
+ERROR HY000: Variable 'innodb_cleaner_real_time' is a GLOBAL variable
+SELECT COUNT(@@GLOBAL.innodb_cleaner_real_time);
+COUNT(@@GLOBAL.innodb_cleaner_real_time)
+1
+1 Expected
+SELECT innodb_cleaner_real_time = @@SESSION.innodb_cleaner_real_time;
+ERROR 42S22: Unknown column 'innodb_cleaner_real_time' in 'field list'
+# restart:<hidden args>
+SELECT @@global.innodb_cleaner_real_time;
+@@global.innodb_cleaner_real_time
+0
+# restart:<hidden args>
+SELECT @@global.innodb_cleaner_real_time;
+@@global.innodb_cleaner_real_time
+1
+# restart

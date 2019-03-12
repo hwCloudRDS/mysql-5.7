@@ -1,0 +1,20 @@
+VPATH= ../../src
+
+
+CASEOBJS=memcpy_s.o memset_s.o strcpy_s.o strncpy_s.o strcat_s.o strncat_s.o testperf.o sprintfod.o securecutil.o secureprintoutput_a.o sprintf_s.o vsprintf_s.o wcscpy_s.o wcsncpy_s.o wcscat_s.o wcsncat_s.o
+
+# if you want to test the performance of memcpy_sp and memset_sp, define TEST_MEMCPY_BENCHMARK by "-DTEST_MEMCPY_BENCHMARK".
+
+CC =cc 
+
+CFLAG = -I ../../include -I ../../src -DNDEBUG -O2  -DTEST_LLU -DPERF_TEST_AS_MAIN -DTEST_MEMCPY_BENCHMARK
+
+all: $(CASEOBJS)
+	$(CC)  $(CFLAG) -o testperf $(CASEOBJS)
+.c.o:
+	$(CC) $(CFLAG) -c $< 
+
+clean:
+	rm *.o testperf
+
+	

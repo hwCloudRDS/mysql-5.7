@@ -1,0 +1,24 @@
+###############################################################################
+#                                                                             #
+# Test for 4-stage binlog group commit system variable                        #
+# combine_engine_log_flush_threshold.                                         #
+#                                                                             #
+###############################################################################
+
+--echo # Default values
+SELECT @@GLOBAL.combine_engine_log_flush_threshold;
+--error ER_INCORRECT_GLOBAL_LOCAL_VAR
+SELECT @@SESSION.combine_engine_log_flush_threshold;
+
+SET @saved_value = @@global.combine_engine_log_flush_threshold;
+
+--echo # Valid values
+SET GLOBAL combine_engine_log_flush_threshold = 0;
+SET GLOBAL combine_engine_log_flush_threshold = 1;
+SET GLOBAL combine_engine_log_flush_threshold = 16384;
+
+--echo # Invalid values: there shall be warnings about truncation
+SET GLOBAL combine_engine_log_flush_threshold = -1;
+SET GLOBAL combine_engine_log_flush_threshold = 16385;
+
+SET GLOBAL combine_engine_log_flush_threshold = @saved_value;

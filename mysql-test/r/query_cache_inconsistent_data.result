@@ -1,0 +1,1609 @@
+drop table if exists t1;
+drop table if exists t2;
+create table t1(c1 int) engine=innodb;
+create table t2(c1 int) engine=innodb;
+connection con1;
+start transaction;
+# read-view opened. the result is cached (A)
+select * from t1;
+c1
+connection con2;
+# The cached result (A) is invalidated. OK so far.
+insert into t1 values(1);
+connection con1;
+# transaction ID assigned (B)
+insert into t2 values(1);
+# this returns 0 row, due to transaction isolation semantics.
+# this query result was cached, but it shouldn't have. (C)
+select * from t1;
+c1
+connection con2;
+start transaction;
+# Before fixed: WRONG. This should return 1 row, but it returns 0 row instead
+select * from t1;
+c1
+1
+commit;
+# correct result. 1 row. This doesn't match the cache because auto-commit SELECT
+select * from t1;
+c1
+1
+start transaction;
+# Before fixed: WRONG again. the result was retrieved from query cache produced by (C)
+select * from t1;
+c1
+1
+disconnect con1;
+disconnect con2;
+connection default;
+drop table if exists t1;
+drop table if exists t2;
+create table t1(c1 int) engine=innodb;
+connect  con1, localhost, root;
+connect  con2, localhost, root;
+connection con1;
+set transaction isolation level read uncommitted;
+SET DEBUG_SYNC= 'wait_after_query_cache_store_query SIGNAL store WAIT_FOR validate';
+select * from t1;
+connection con2;
+SET DEBUG_SYNC= 'now WAIT_FOR store';
+SET DEBUG_SYNC= 'wait_before_query_cache_invalidate SIGNAL validate WAIT_FOR insert';
+insert into t1 values(1);
+connection con1;
+c1
+1
+set transaction isolation level repeatable read;
+# Before fixed:
+# This query runs in default RR mode, but it hit the cache and returns uncommited data
+select * from t1;
+c1
+SET DEBUG_SYNC= 'now SIGNAL insert';
+connection con2;
+disconnect con1;
+disconnect con2;
+connection default;
+drop table if exists t1;
+set @save_query_cache_size=@@global.query_cache_size;
+set @save_table_open_cache=@@global.table_open_cache;
+set @save_table_definition_cache=@@global.table_definition_cache;
+set @save_innodb_stats_auto_recalc=@@global.innodb_stats_auto_recalc;
+set @@global.query_cache_size=268435456;
+# This limits the number of opened files
+set @@global.table_open_cache=400;
+# This is a soft limit on InnDB dictionary cache size
+set @@global.table_definition_cache=400;
+# get statistics collection thread out of way
+set @@global.innodb_stats_auto_recalc=0;
+create table t1(c1 int) engine=innodb;
+# create 500 tables, from l1 to l500;
+create table l500(c1 int) engine=innodb;
+create table l499(c1 int) engine=innodb;
+create table l498(c1 int) engine=innodb;
+create table l497(c1 int) engine=innodb;
+create table l496(c1 int) engine=innodb;
+create table l495(c1 int) engine=innodb;
+create table l494(c1 int) engine=innodb;
+create table l493(c1 int) engine=innodb;
+create table l492(c1 int) engine=innodb;
+create table l491(c1 int) engine=innodb;
+create table l490(c1 int) engine=innodb;
+create table l489(c1 int) engine=innodb;
+create table l488(c1 int) engine=innodb;
+create table l487(c1 int) engine=innodb;
+create table l486(c1 int) engine=innodb;
+create table l485(c1 int) engine=innodb;
+create table l484(c1 int) engine=innodb;
+create table l483(c1 int) engine=innodb;
+create table l482(c1 int) engine=innodb;
+create table l481(c1 int) engine=innodb;
+create table l480(c1 int) engine=innodb;
+create table l479(c1 int) engine=innodb;
+create table l478(c1 int) engine=innodb;
+create table l477(c1 int) engine=innodb;
+create table l476(c1 int) engine=innodb;
+create table l475(c1 int) engine=innodb;
+create table l474(c1 int) engine=innodb;
+create table l473(c1 int) engine=innodb;
+create table l472(c1 int) engine=innodb;
+create table l471(c1 int) engine=innodb;
+create table l470(c1 int) engine=innodb;
+create table l469(c1 int) engine=innodb;
+create table l468(c1 int) engine=innodb;
+create table l467(c1 int) engine=innodb;
+create table l466(c1 int) engine=innodb;
+create table l465(c1 int) engine=innodb;
+create table l464(c1 int) engine=innodb;
+create table l463(c1 int) engine=innodb;
+create table l462(c1 int) engine=innodb;
+create table l461(c1 int) engine=innodb;
+create table l460(c1 int) engine=innodb;
+create table l459(c1 int) engine=innodb;
+create table l458(c1 int) engine=innodb;
+create table l457(c1 int) engine=innodb;
+create table l456(c1 int) engine=innodb;
+create table l455(c1 int) engine=innodb;
+create table l454(c1 int) engine=innodb;
+create table l453(c1 int) engine=innodb;
+create table l452(c1 int) engine=innodb;
+create table l451(c1 int) engine=innodb;
+create table l450(c1 int) engine=innodb;
+create table l449(c1 int) engine=innodb;
+create table l448(c1 int) engine=innodb;
+create table l447(c1 int) engine=innodb;
+create table l446(c1 int) engine=innodb;
+create table l445(c1 int) engine=innodb;
+create table l444(c1 int) engine=innodb;
+create table l443(c1 int) engine=innodb;
+create table l442(c1 int) engine=innodb;
+create table l441(c1 int) engine=innodb;
+create table l440(c1 int) engine=innodb;
+create table l439(c1 int) engine=innodb;
+create table l438(c1 int) engine=innodb;
+create table l437(c1 int) engine=innodb;
+create table l436(c1 int) engine=innodb;
+create table l435(c1 int) engine=innodb;
+create table l434(c1 int) engine=innodb;
+create table l433(c1 int) engine=innodb;
+create table l432(c1 int) engine=innodb;
+create table l431(c1 int) engine=innodb;
+create table l430(c1 int) engine=innodb;
+create table l429(c1 int) engine=innodb;
+create table l428(c1 int) engine=innodb;
+create table l427(c1 int) engine=innodb;
+create table l426(c1 int) engine=innodb;
+create table l425(c1 int) engine=innodb;
+create table l424(c1 int) engine=innodb;
+create table l423(c1 int) engine=innodb;
+create table l422(c1 int) engine=innodb;
+create table l421(c1 int) engine=innodb;
+create table l420(c1 int) engine=innodb;
+create table l419(c1 int) engine=innodb;
+create table l418(c1 int) engine=innodb;
+create table l417(c1 int) engine=innodb;
+create table l416(c1 int) engine=innodb;
+create table l415(c1 int) engine=innodb;
+create table l414(c1 int) engine=innodb;
+create table l413(c1 int) engine=innodb;
+create table l412(c1 int) engine=innodb;
+create table l411(c1 int) engine=innodb;
+create table l410(c1 int) engine=innodb;
+create table l409(c1 int) engine=innodb;
+create table l408(c1 int) engine=innodb;
+create table l407(c1 int) engine=innodb;
+create table l406(c1 int) engine=innodb;
+create table l405(c1 int) engine=innodb;
+create table l404(c1 int) engine=innodb;
+create table l403(c1 int) engine=innodb;
+create table l402(c1 int) engine=innodb;
+create table l401(c1 int) engine=innodb;
+create table l400(c1 int) engine=innodb;
+create table l399(c1 int) engine=innodb;
+create table l398(c1 int) engine=innodb;
+create table l397(c1 int) engine=innodb;
+create table l396(c1 int) engine=innodb;
+create table l395(c1 int) engine=innodb;
+create table l394(c1 int) engine=innodb;
+create table l393(c1 int) engine=innodb;
+create table l392(c1 int) engine=innodb;
+create table l391(c1 int) engine=innodb;
+create table l390(c1 int) engine=innodb;
+create table l389(c1 int) engine=innodb;
+create table l388(c1 int) engine=innodb;
+create table l387(c1 int) engine=innodb;
+create table l386(c1 int) engine=innodb;
+create table l385(c1 int) engine=innodb;
+create table l384(c1 int) engine=innodb;
+create table l383(c1 int) engine=innodb;
+create table l382(c1 int) engine=innodb;
+create table l381(c1 int) engine=innodb;
+create table l380(c1 int) engine=innodb;
+create table l379(c1 int) engine=innodb;
+create table l378(c1 int) engine=innodb;
+create table l377(c1 int) engine=innodb;
+create table l376(c1 int) engine=innodb;
+create table l375(c1 int) engine=innodb;
+create table l374(c1 int) engine=innodb;
+create table l373(c1 int) engine=innodb;
+create table l372(c1 int) engine=innodb;
+create table l371(c1 int) engine=innodb;
+create table l370(c1 int) engine=innodb;
+create table l369(c1 int) engine=innodb;
+create table l368(c1 int) engine=innodb;
+create table l367(c1 int) engine=innodb;
+create table l366(c1 int) engine=innodb;
+create table l365(c1 int) engine=innodb;
+create table l364(c1 int) engine=innodb;
+create table l363(c1 int) engine=innodb;
+create table l362(c1 int) engine=innodb;
+create table l361(c1 int) engine=innodb;
+create table l360(c1 int) engine=innodb;
+create table l359(c1 int) engine=innodb;
+create table l358(c1 int) engine=innodb;
+create table l357(c1 int) engine=innodb;
+create table l356(c1 int) engine=innodb;
+create table l355(c1 int) engine=innodb;
+create table l354(c1 int) engine=innodb;
+create table l353(c1 int) engine=innodb;
+create table l352(c1 int) engine=innodb;
+create table l351(c1 int) engine=innodb;
+create table l350(c1 int) engine=innodb;
+create table l349(c1 int) engine=innodb;
+create table l348(c1 int) engine=innodb;
+create table l347(c1 int) engine=innodb;
+create table l346(c1 int) engine=innodb;
+create table l345(c1 int) engine=innodb;
+create table l344(c1 int) engine=innodb;
+create table l343(c1 int) engine=innodb;
+create table l342(c1 int) engine=innodb;
+create table l341(c1 int) engine=innodb;
+create table l340(c1 int) engine=innodb;
+create table l339(c1 int) engine=innodb;
+create table l338(c1 int) engine=innodb;
+create table l337(c1 int) engine=innodb;
+create table l336(c1 int) engine=innodb;
+create table l335(c1 int) engine=innodb;
+create table l334(c1 int) engine=innodb;
+create table l333(c1 int) engine=innodb;
+create table l332(c1 int) engine=innodb;
+create table l331(c1 int) engine=innodb;
+create table l330(c1 int) engine=innodb;
+create table l329(c1 int) engine=innodb;
+create table l328(c1 int) engine=innodb;
+create table l327(c1 int) engine=innodb;
+create table l326(c1 int) engine=innodb;
+create table l325(c1 int) engine=innodb;
+create table l324(c1 int) engine=innodb;
+create table l323(c1 int) engine=innodb;
+create table l322(c1 int) engine=innodb;
+create table l321(c1 int) engine=innodb;
+create table l320(c1 int) engine=innodb;
+create table l319(c1 int) engine=innodb;
+create table l318(c1 int) engine=innodb;
+create table l317(c1 int) engine=innodb;
+create table l316(c1 int) engine=innodb;
+create table l315(c1 int) engine=innodb;
+create table l314(c1 int) engine=innodb;
+create table l313(c1 int) engine=innodb;
+create table l312(c1 int) engine=innodb;
+create table l311(c1 int) engine=innodb;
+create table l310(c1 int) engine=innodb;
+create table l309(c1 int) engine=innodb;
+create table l308(c1 int) engine=innodb;
+create table l307(c1 int) engine=innodb;
+create table l306(c1 int) engine=innodb;
+create table l305(c1 int) engine=innodb;
+create table l304(c1 int) engine=innodb;
+create table l303(c1 int) engine=innodb;
+create table l302(c1 int) engine=innodb;
+create table l301(c1 int) engine=innodb;
+create table l300(c1 int) engine=innodb;
+create table l299(c1 int) engine=innodb;
+create table l298(c1 int) engine=innodb;
+create table l297(c1 int) engine=innodb;
+create table l296(c1 int) engine=innodb;
+create table l295(c1 int) engine=innodb;
+create table l294(c1 int) engine=innodb;
+create table l293(c1 int) engine=innodb;
+create table l292(c1 int) engine=innodb;
+create table l291(c1 int) engine=innodb;
+create table l290(c1 int) engine=innodb;
+create table l289(c1 int) engine=innodb;
+create table l288(c1 int) engine=innodb;
+create table l287(c1 int) engine=innodb;
+create table l286(c1 int) engine=innodb;
+create table l285(c1 int) engine=innodb;
+create table l284(c1 int) engine=innodb;
+create table l283(c1 int) engine=innodb;
+create table l282(c1 int) engine=innodb;
+create table l281(c1 int) engine=innodb;
+create table l280(c1 int) engine=innodb;
+create table l279(c1 int) engine=innodb;
+create table l278(c1 int) engine=innodb;
+create table l277(c1 int) engine=innodb;
+create table l276(c1 int) engine=innodb;
+create table l275(c1 int) engine=innodb;
+create table l274(c1 int) engine=innodb;
+create table l273(c1 int) engine=innodb;
+create table l272(c1 int) engine=innodb;
+create table l271(c1 int) engine=innodb;
+create table l270(c1 int) engine=innodb;
+create table l269(c1 int) engine=innodb;
+create table l268(c1 int) engine=innodb;
+create table l267(c1 int) engine=innodb;
+create table l266(c1 int) engine=innodb;
+create table l265(c1 int) engine=innodb;
+create table l264(c1 int) engine=innodb;
+create table l263(c1 int) engine=innodb;
+create table l262(c1 int) engine=innodb;
+create table l261(c1 int) engine=innodb;
+create table l260(c1 int) engine=innodb;
+create table l259(c1 int) engine=innodb;
+create table l258(c1 int) engine=innodb;
+create table l257(c1 int) engine=innodb;
+create table l256(c1 int) engine=innodb;
+create table l255(c1 int) engine=innodb;
+create table l254(c1 int) engine=innodb;
+create table l253(c1 int) engine=innodb;
+create table l252(c1 int) engine=innodb;
+create table l251(c1 int) engine=innodb;
+create table l250(c1 int) engine=innodb;
+create table l249(c1 int) engine=innodb;
+create table l248(c1 int) engine=innodb;
+create table l247(c1 int) engine=innodb;
+create table l246(c1 int) engine=innodb;
+create table l245(c1 int) engine=innodb;
+create table l244(c1 int) engine=innodb;
+create table l243(c1 int) engine=innodb;
+create table l242(c1 int) engine=innodb;
+create table l241(c1 int) engine=innodb;
+create table l240(c1 int) engine=innodb;
+create table l239(c1 int) engine=innodb;
+create table l238(c1 int) engine=innodb;
+create table l237(c1 int) engine=innodb;
+create table l236(c1 int) engine=innodb;
+create table l235(c1 int) engine=innodb;
+create table l234(c1 int) engine=innodb;
+create table l233(c1 int) engine=innodb;
+create table l232(c1 int) engine=innodb;
+create table l231(c1 int) engine=innodb;
+create table l230(c1 int) engine=innodb;
+create table l229(c1 int) engine=innodb;
+create table l228(c1 int) engine=innodb;
+create table l227(c1 int) engine=innodb;
+create table l226(c1 int) engine=innodb;
+create table l225(c1 int) engine=innodb;
+create table l224(c1 int) engine=innodb;
+create table l223(c1 int) engine=innodb;
+create table l222(c1 int) engine=innodb;
+create table l221(c1 int) engine=innodb;
+create table l220(c1 int) engine=innodb;
+create table l219(c1 int) engine=innodb;
+create table l218(c1 int) engine=innodb;
+create table l217(c1 int) engine=innodb;
+create table l216(c1 int) engine=innodb;
+create table l215(c1 int) engine=innodb;
+create table l214(c1 int) engine=innodb;
+create table l213(c1 int) engine=innodb;
+create table l212(c1 int) engine=innodb;
+create table l211(c1 int) engine=innodb;
+create table l210(c1 int) engine=innodb;
+create table l209(c1 int) engine=innodb;
+create table l208(c1 int) engine=innodb;
+create table l207(c1 int) engine=innodb;
+create table l206(c1 int) engine=innodb;
+create table l205(c1 int) engine=innodb;
+create table l204(c1 int) engine=innodb;
+create table l203(c1 int) engine=innodb;
+create table l202(c1 int) engine=innodb;
+create table l201(c1 int) engine=innodb;
+create table l200(c1 int) engine=innodb;
+create table l199(c1 int) engine=innodb;
+create table l198(c1 int) engine=innodb;
+create table l197(c1 int) engine=innodb;
+create table l196(c1 int) engine=innodb;
+create table l195(c1 int) engine=innodb;
+create table l194(c1 int) engine=innodb;
+create table l193(c1 int) engine=innodb;
+create table l192(c1 int) engine=innodb;
+create table l191(c1 int) engine=innodb;
+create table l190(c1 int) engine=innodb;
+create table l189(c1 int) engine=innodb;
+create table l188(c1 int) engine=innodb;
+create table l187(c1 int) engine=innodb;
+create table l186(c1 int) engine=innodb;
+create table l185(c1 int) engine=innodb;
+create table l184(c1 int) engine=innodb;
+create table l183(c1 int) engine=innodb;
+create table l182(c1 int) engine=innodb;
+create table l181(c1 int) engine=innodb;
+create table l180(c1 int) engine=innodb;
+create table l179(c1 int) engine=innodb;
+create table l178(c1 int) engine=innodb;
+create table l177(c1 int) engine=innodb;
+create table l176(c1 int) engine=innodb;
+create table l175(c1 int) engine=innodb;
+create table l174(c1 int) engine=innodb;
+create table l173(c1 int) engine=innodb;
+create table l172(c1 int) engine=innodb;
+create table l171(c1 int) engine=innodb;
+create table l170(c1 int) engine=innodb;
+create table l169(c1 int) engine=innodb;
+create table l168(c1 int) engine=innodb;
+create table l167(c1 int) engine=innodb;
+create table l166(c1 int) engine=innodb;
+create table l165(c1 int) engine=innodb;
+create table l164(c1 int) engine=innodb;
+create table l163(c1 int) engine=innodb;
+create table l162(c1 int) engine=innodb;
+create table l161(c1 int) engine=innodb;
+create table l160(c1 int) engine=innodb;
+create table l159(c1 int) engine=innodb;
+create table l158(c1 int) engine=innodb;
+create table l157(c1 int) engine=innodb;
+create table l156(c1 int) engine=innodb;
+create table l155(c1 int) engine=innodb;
+create table l154(c1 int) engine=innodb;
+create table l153(c1 int) engine=innodb;
+create table l152(c1 int) engine=innodb;
+create table l151(c1 int) engine=innodb;
+create table l150(c1 int) engine=innodb;
+create table l149(c1 int) engine=innodb;
+create table l148(c1 int) engine=innodb;
+create table l147(c1 int) engine=innodb;
+create table l146(c1 int) engine=innodb;
+create table l145(c1 int) engine=innodb;
+create table l144(c1 int) engine=innodb;
+create table l143(c1 int) engine=innodb;
+create table l142(c1 int) engine=innodb;
+create table l141(c1 int) engine=innodb;
+create table l140(c1 int) engine=innodb;
+create table l139(c1 int) engine=innodb;
+create table l138(c1 int) engine=innodb;
+create table l137(c1 int) engine=innodb;
+create table l136(c1 int) engine=innodb;
+create table l135(c1 int) engine=innodb;
+create table l134(c1 int) engine=innodb;
+create table l133(c1 int) engine=innodb;
+create table l132(c1 int) engine=innodb;
+create table l131(c1 int) engine=innodb;
+create table l130(c1 int) engine=innodb;
+create table l129(c1 int) engine=innodb;
+create table l128(c1 int) engine=innodb;
+create table l127(c1 int) engine=innodb;
+create table l126(c1 int) engine=innodb;
+create table l125(c1 int) engine=innodb;
+create table l124(c1 int) engine=innodb;
+create table l123(c1 int) engine=innodb;
+create table l122(c1 int) engine=innodb;
+create table l121(c1 int) engine=innodb;
+create table l120(c1 int) engine=innodb;
+create table l119(c1 int) engine=innodb;
+create table l118(c1 int) engine=innodb;
+create table l117(c1 int) engine=innodb;
+create table l116(c1 int) engine=innodb;
+create table l115(c1 int) engine=innodb;
+create table l114(c1 int) engine=innodb;
+create table l113(c1 int) engine=innodb;
+create table l112(c1 int) engine=innodb;
+create table l111(c1 int) engine=innodb;
+create table l110(c1 int) engine=innodb;
+create table l109(c1 int) engine=innodb;
+create table l108(c1 int) engine=innodb;
+create table l107(c1 int) engine=innodb;
+create table l106(c1 int) engine=innodb;
+create table l105(c1 int) engine=innodb;
+create table l104(c1 int) engine=innodb;
+create table l103(c1 int) engine=innodb;
+create table l102(c1 int) engine=innodb;
+create table l101(c1 int) engine=innodb;
+create table l100(c1 int) engine=innodb;
+create table l99(c1 int) engine=innodb;
+create table l98(c1 int) engine=innodb;
+create table l97(c1 int) engine=innodb;
+create table l96(c1 int) engine=innodb;
+create table l95(c1 int) engine=innodb;
+create table l94(c1 int) engine=innodb;
+create table l93(c1 int) engine=innodb;
+create table l92(c1 int) engine=innodb;
+create table l91(c1 int) engine=innodb;
+create table l90(c1 int) engine=innodb;
+create table l89(c1 int) engine=innodb;
+create table l88(c1 int) engine=innodb;
+create table l87(c1 int) engine=innodb;
+create table l86(c1 int) engine=innodb;
+create table l85(c1 int) engine=innodb;
+create table l84(c1 int) engine=innodb;
+create table l83(c1 int) engine=innodb;
+create table l82(c1 int) engine=innodb;
+create table l81(c1 int) engine=innodb;
+create table l80(c1 int) engine=innodb;
+create table l79(c1 int) engine=innodb;
+create table l78(c1 int) engine=innodb;
+create table l77(c1 int) engine=innodb;
+create table l76(c1 int) engine=innodb;
+create table l75(c1 int) engine=innodb;
+create table l74(c1 int) engine=innodb;
+create table l73(c1 int) engine=innodb;
+create table l72(c1 int) engine=innodb;
+create table l71(c1 int) engine=innodb;
+create table l70(c1 int) engine=innodb;
+create table l69(c1 int) engine=innodb;
+create table l68(c1 int) engine=innodb;
+create table l67(c1 int) engine=innodb;
+create table l66(c1 int) engine=innodb;
+create table l65(c1 int) engine=innodb;
+create table l64(c1 int) engine=innodb;
+create table l63(c1 int) engine=innodb;
+create table l62(c1 int) engine=innodb;
+create table l61(c1 int) engine=innodb;
+create table l60(c1 int) engine=innodb;
+create table l59(c1 int) engine=innodb;
+create table l58(c1 int) engine=innodb;
+create table l57(c1 int) engine=innodb;
+create table l56(c1 int) engine=innodb;
+create table l55(c1 int) engine=innodb;
+create table l54(c1 int) engine=innodb;
+create table l53(c1 int) engine=innodb;
+create table l52(c1 int) engine=innodb;
+create table l51(c1 int) engine=innodb;
+create table l50(c1 int) engine=innodb;
+create table l49(c1 int) engine=innodb;
+create table l48(c1 int) engine=innodb;
+create table l47(c1 int) engine=innodb;
+create table l46(c1 int) engine=innodb;
+create table l45(c1 int) engine=innodb;
+create table l44(c1 int) engine=innodb;
+create table l43(c1 int) engine=innodb;
+create table l42(c1 int) engine=innodb;
+create table l41(c1 int) engine=innodb;
+create table l40(c1 int) engine=innodb;
+create table l39(c1 int) engine=innodb;
+create table l38(c1 int) engine=innodb;
+create table l37(c1 int) engine=innodb;
+create table l36(c1 int) engine=innodb;
+create table l35(c1 int) engine=innodb;
+create table l34(c1 int) engine=innodb;
+create table l33(c1 int) engine=innodb;
+create table l32(c1 int) engine=innodb;
+create table l31(c1 int) engine=innodb;
+create table l30(c1 int) engine=innodb;
+create table l29(c1 int) engine=innodb;
+create table l28(c1 int) engine=innodb;
+create table l27(c1 int) engine=innodb;
+create table l26(c1 int) engine=innodb;
+create table l25(c1 int) engine=innodb;
+create table l24(c1 int) engine=innodb;
+create table l23(c1 int) engine=innodb;
+create table l22(c1 int) engine=innodb;
+create table l21(c1 int) engine=innodb;
+create table l20(c1 int) engine=innodb;
+create table l19(c1 int) engine=innodb;
+create table l18(c1 int) engine=innodb;
+create table l17(c1 int) engine=innodb;
+create table l16(c1 int) engine=innodb;
+create table l15(c1 int) engine=innodb;
+create table l14(c1 int) engine=innodb;
+create table l13(c1 int) engine=innodb;
+create table l12(c1 int) engine=innodb;
+create table l11(c1 int) engine=innodb;
+create table l10(c1 int) engine=innodb;
+create table l9(c1 int) engine=innodb;
+create table l8(c1 int) engine=innodb;
+create table l7(c1 int) engine=innodb;
+create table l6(c1 int) engine=innodb;
+create table l5(c1 int) engine=innodb;
+create table l4(c1 int) engine=innodb;
+create table l3(c1 int) engine=innodb;
+create table l2(c1 int) engine=innodb;
+create table l1(c1 int) engine=innodb;
+connect  con1, localhost, root;
+connect  con2, localhost, root;
+connection con1;
+start transaction;
+# read view open
+select * from t1;
+c1
+connection con2;
+insert into t1 values(1);
+start transaction;
+# return 1 row, result is cached
+select * from t1;
+c1
+1
+commit;
+# select from the 500 tables
+# the purpose is to get t1 evicted from dictionary cache
+select * from l500;
+c1
+select * from l499;
+c1
+select * from l498;
+c1
+select * from l497;
+c1
+select * from l496;
+c1
+select * from l495;
+c1
+select * from l494;
+c1
+select * from l493;
+c1
+select * from l492;
+c1
+select * from l491;
+c1
+select * from l490;
+c1
+select * from l489;
+c1
+select * from l488;
+c1
+select * from l487;
+c1
+select * from l486;
+c1
+select * from l485;
+c1
+select * from l484;
+c1
+select * from l483;
+c1
+select * from l482;
+c1
+select * from l481;
+c1
+select * from l480;
+c1
+select * from l479;
+c1
+select * from l478;
+c1
+select * from l477;
+c1
+select * from l476;
+c1
+select * from l475;
+c1
+select * from l474;
+c1
+select * from l473;
+c1
+select * from l472;
+c1
+select * from l471;
+c1
+select * from l470;
+c1
+select * from l469;
+c1
+select * from l468;
+c1
+select * from l467;
+c1
+select * from l466;
+c1
+select * from l465;
+c1
+select * from l464;
+c1
+select * from l463;
+c1
+select * from l462;
+c1
+select * from l461;
+c1
+select * from l460;
+c1
+select * from l459;
+c1
+select * from l458;
+c1
+select * from l457;
+c1
+select * from l456;
+c1
+select * from l455;
+c1
+select * from l454;
+c1
+select * from l453;
+c1
+select * from l452;
+c1
+select * from l451;
+c1
+select * from l450;
+c1
+select * from l449;
+c1
+select * from l448;
+c1
+select * from l447;
+c1
+select * from l446;
+c1
+select * from l445;
+c1
+select * from l444;
+c1
+select * from l443;
+c1
+select * from l442;
+c1
+select * from l441;
+c1
+select * from l440;
+c1
+select * from l439;
+c1
+select * from l438;
+c1
+select * from l437;
+c1
+select * from l436;
+c1
+select * from l435;
+c1
+select * from l434;
+c1
+select * from l433;
+c1
+select * from l432;
+c1
+select * from l431;
+c1
+select * from l430;
+c1
+select * from l429;
+c1
+select * from l428;
+c1
+select * from l427;
+c1
+select * from l426;
+c1
+select * from l425;
+c1
+select * from l424;
+c1
+select * from l423;
+c1
+select * from l422;
+c1
+select * from l421;
+c1
+select * from l420;
+c1
+select * from l419;
+c1
+select * from l418;
+c1
+select * from l417;
+c1
+select * from l416;
+c1
+select * from l415;
+c1
+select * from l414;
+c1
+select * from l413;
+c1
+select * from l412;
+c1
+select * from l411;
+c1
+select * from l410;
+c1
+select * from l409;
+c1
+select * from l408;
+c1
+select * from l407;
+c1
+select * from l406;
+c1
+select * from l405;
+c1
+select * from l404;
+c1
+select * from l403;
+c1
+select * from l402;
+c1
+select * from l401;
+c1
+select * from l400;
+c1
+select * from l399;
+c1
+select * from l398;
+c1
+select * from l397;
+c1
+select * from l396;
+c1
+select * from l395;
+c1
+select * from l394;
+c1
+select * from l393;
+c1
+select * from l392;
+c1
+select * from l391;
+c1
+select * from l390;
+c1
+select * from l389;
+c1
+select * from l388;
+c1
+select * from l387;
+c1
+select * from l386;
+c1
+select * from l385;
+c1
+select * from l384;
+c1
+select * from l383;
+c1
+select * from l382;
+c1
+select * from l381;
+c1
+select * from l380;
+c1
+select * from l379;
+c1
+select * from l378;
+c1
+select * from l377;
+c1
+select * from l376;
+c1
+select * from l375;
+c1
+select * from l374;
+c1
+select * from l373;
+c1
+select * from l372;
+c1
+select * from l371;
+c1
+select * from l370;
+c1
+select * from l369;
+c1
+select * from l368;
+c1
+select * from l367;
+c1
+select * from l366;
+c1
+select * from l365;
+c1
+select * from l364;
+c1
+select * from l363;
+c1
+select * from l362;
+c1
+select * from l361;
+c1
+select * from l360;
+c1
+select * from l359;
+c1
+select * from l358;
+c1
+select * from l357;
+c1
+select * from l356;
+c1
+select * from l355;
+c1
+select * from l354;
+c1
+select * from l353;
+c1
+select * from l352;
+c1
+select * from l351;
+c1
+select * from l350;
+c1
+select * from l349;
+c1
+select * from l348;
+c1
+select * from l347;
+c1
+select * from l346;
+c1
+select * from l345;
+c1
+select * from l344;
+c1
+select * from l343;
+c1
+select * from l342;
+c1
+select * from l341;
+c1
+select * from l340;
+c1
+select * from l339;
+c1
+select * from l338;
+c1
+select * from l337;
+c1
+select * from l336;
+c1
+select * from l335;
+c1
+select * from l334;
+c1
+select * from l333;
+c1
+select * from l332;
+c1
+select * from l331;
+c1
+select * from l330;
+c1
+select * from l329;
+c1
+select * from l328;
+c1
+select * from l327;
+c1
+select * from l326;
+c1
+select * from l325;
+c1
+select * from l324;
+c1
+select * from l323;
+c1
+select * from l322;
+c1
+select * from l321;
+c1
+select * from l320;
+c1
+select * from l319;
+c1
+select * from l318;
+c1
+select * from l317;
+c1
+select * from l316;
+c1
+select * from l315;
+c1
+select * from l314;
+c1
+select * from l313;
+c1
+select * from l312;
+c1
+select * from l311;
+c1
+select * from l310;
+c1
+select * from l309;
+c1
+select * from l308;
+c1
+select * from l307;
+c1
+select * from l306;
+c1
+select * from l305;
+c1
+select * from l304;
+c1
+select * from l303;
+c1
+select * from l302;
+c1
+select * from l301;
+c1
+select * from l300;
+c1
+select * from l299;
+c1
+select * from l298;
+c1
+select * from l297;
+c1
+select * from l296;
+c1
+select * from l295;
+c1
+select * from l294;
+c1
+select * from l293;
+c1
+select * from l292;
+c1
+select * from l291;
+c1
+select * from l290;
+c1
+select * from l289;
+c1
+select * from l288;
+c1
+select * from l287;
+c1
+select * from l286;
+c1
+select * from l285;
+c1
+select * from l284;
+c1
+select * from l283;
+c1
+select * from l282;
+c1
+select * from l281;
+c1
+select * from l280;
+c1
+select * from l279;
+c1
+select * from l278;
+c1
+select * from l277;
+c1
+select * from l276;
+c1
+select * from l275;
+c1
+select * from l274;
+c1
+select * from l273;
+c1
+select * from l272;
+c1
+select * from l271;
+c1
+select * from l270;
+c1
+select * from l269;
+c1
+select * from l268;
+c1
+select * from l267;
+c1
+select * from l266;
+c1
+select * from l265;
+c1
+select * from l264;
+c1
+select * from l263;
+c1
+select * from l262;
+c1
+select * from l261;
+c1
+select * from l260;
+c1
+select * from l259;
+c1
+select * from l258;
+c1
+select * from l257;
+c1
+select * from l256;
+c1
+select * from l255;
+c1
+select * from l254;
+c1
+select * from l253;
+c1
+select * from l252;
+c1
+select * from l251;
+c1
+select * from l250;
+c1
+select * from l249;
+c1
+select * from l248;
+c1
+select * from l247;
+c1
+select * from l246;
+c1
+select * from l245;
+c1
+select * from l244;
+c1
+select * from l243;
+c1
+select * from l242;
+c1
+select * from l241;
+c1
+select * from l240;
+c1
+select * from l239;
+c1
+select * from l238;
+c1
+select * from l237;
+c1
+select * from l236;
+c1
+select * from l235;
+c1
+select * from l234;
+c1
+select * from l233;
+c1
+select * from l232;
+c1
+select * from l231;
+c1
+select * from l230;
+c1
+select * from l229;
+c1
+select * from l228;
+c1
+select * from l227;
+c1
+select * from l226;
+c1
+select * from l225;
+c1
+select * from l224;
+c1
+select * from l223;
+c1
+select * from l222;
+c1
+select * from l221;
+c1
+select * from l220;
+c1
+select * from l219;
+c1
+select * from l218;
+c1
+select * from l217;
+c1
+select * from l216;
+c1
+select * from l215;
+c1
+select * from l214;
+c1
+select * from l213;
+c1
+select * from l212;
+c1
+select * from l211;
+c1
+select * from l210;
+c1
+select * from l209;
+c1
+select * from l208;
+c1
+select * from l207;
+c1
+select * from l206;
+c1
+select * from l205;
+c1
+select * from l204;
+c1
+select * from l203;
+c1
+select * from l202;
+c1
+select * from l201;
+c1
+select * from l200;
+c1
+select * from l199;
+c1
+select * from l198;
+c1
+select * from l197;
+c1
+select * from l196;
+c1
+select * from l195;
+c1
+select * from l194;
+c1
+select * from l193;
+c1
+select * from l192;
+c1
+select * from l191;
+c1
+select * from l190;
+c1
+select * from l189;
+c1
+select * from l188;
+c1
+select * from l187;
+c1
+select * from l186;
+c1
+select * from l185;
+c1
+select * from l184;
+c1
+select * from l183;
+c1
+select * from l182;
+c1
+select * from l181;
+c1
+select * from l180;
+c1
+select * from l179;
+c1
+select * from l178;
+c1
+select * from l177;
+c1
+select * from l176;
+c1
+select * from l175;
+c1
+select * from l174;
+c1
+select * from l173;
+c1
+select * from l172;
+c1
+select * from l171;
+c1
+select * from l170;
+c1
+select * from l169;
+c1
+select * from l168;
+c1
+select * from l167;
+c1
+select * from l166;
+c1
+select * from l165;
+c1
+select * from l164;
+c1
+select * from l163;
+c1
+select * from l162;
+c1
+select * from l161;
+c1
+select * from l160;
+c1
+select * from l159;
+c1
+select * from l158;
+c1
+select * from l157;
+c1
+select * from l156;
+c1
+select * from l155;
+c1
+select * from l154;
+c1
+select * from l153;
+c1
+select * from l152;
+c1
+select * from l151;
+c1
+select * from l150;
+c1
+select * from l149;
+c1
+select * from l148;
+c1
+select * from l147;
+c1
+select * from l146;
+c1
+select * from l145;
+c1
+select * from l144;
+c1
+select * from l143;
+c1
+select * from l142;
+c1
+select * from l141;
+c1
+select * from l140;
+c1
+select * from l139;
+c1
+select * from l138;
+c1
+select * from l137;
+c1
+select * from l136;
+c1
+select * from l135;
+c1
+select * from l134;
+c1
+select * from l133;
+c1
+select * from l132;
+c1
+select * from l131;
+c1
+select * from l130;
+c1
+select * from l129;
+c1
+select * from l128;
+c1
+select * from l127;
+c1
+select * from l126;
+c1
+select * from l125;
+c1
+select * from l124;
+c1
+select * from l123;
+c1
+select * from l122;
+c1
+select * from l121;
+c1
+select * from l120;
+c1
+select * from l119;
+c1
+select * from l118;
+c1
+select * from l117;
+c1
+select * from l116;
+c1
+select * from l115;
+c1
+select * from l114;
+c1
+select * from l113;
+c1
+select * from l112;
+c1
+select * from l111;
+c1
+select * from l110;
+c1
+select * from l109;
+c1
+select * from l108;
+c1
+select * from l107;
+c1
+select * from l106;
+c1
+select * from l105;
+c1
+select * from l104;
+c1
+select * from l103;
+c1
+select * from l102;
+c1
+select * from l101;
+c1
+select * from l100;
+c1
+select * from l99;
+c1
+select * from l98;
+c1
+select * from l97;
+c1
+select * from l96;
+c1
+select * from l95;
+c1
+select * from l94;
+c1
+select * from l93;
+c1
+select * from l92;
+c1
+select * from l91;
+c1
+select * from l90;
+c1
+select * from l89;
+c1
+select * from l88;
+c1
+select * from l87;
+c1
+select * from l86;
+c1
+select * from l85;
+c1
+select * from l84;
+c1
+select * from l83;
+c1
+select * from l82;
+c1
+select * from l81;
+c1
+select * from l80;
+c1
+select * from l79;
+c1
+select * from l78;
+c1
+select * from l77;
+c1
+select * from l76;
+c1
+select * from l75;
+c1
+select * from l74;
+c1
+select * from l73;
+c1
+select * from l72;
+c1
+select * from l71;
+c1
+select * from l70;
+c1
+select * from l69;
+c1
+select * from l68;
+c1
+select * from l67;
+c1
+select * from l66;
+c1
+select * from l65;
+c1
+select * from l64;
+c1
+select * from l63;
+c1
+select * from l62;
+c1
+select * from l61;
+c1
+select * from l60;
+c1
+select * from l59;
+c1
+select * from l58;
+c1
+select * from l57;
+c1
+select * from l56;
+c1
+select * from l55;
+c1
+select * from l54;
+c1
+select * from l53;
+c1
+select * from l52;
+c1
+select * from l51;
+c1
+select * from l50;
+c1
+select * from l49;
+c1
+select * from l48;
+c1
+select * from l47;
+c1
+select * from l46;
+c1
+select * from l45;
+c1
+select * from l44;
+c1
+select * from l43;
+c1
+select * from l42;
+c1
+select * from l41;
+c1
+select * from l40;
+c1
+select * from l39;
+c1
+select * from l38;
+c1
+select * from l37;
+c1
+select * from l36;
+c1
+select * from l35;
+c1
+select * from l34;
+c1
+select * from l33;
+c1
+select * from l32;
+c1
+select * from l31;
+c1
+select * from l30;
+c1
+select * from l29;
+c1
+select * from l28;
+c1
+select * from l27;
+c1
+select * from l26;
+c1
+select * from l25;
+c1
+select * from l24;
+c1
+select * from l23;
+c1
+select * from l22;
+c1
+select * from l21;
+c1
+select * from l20;
+c1
+select * from l19;
+c1
+select * from l18;
+c1
+select * from l17;
+c1
+select * from l16;
+c1
+select * from l15;
+c1
+select * from l14;
+c1
+select * from l13;
+c1
+select * from l12;
+c1
+select * from l11;
+c1
+select * from l10;
+c1
+select * from l9;
+c1
+select * from l8;
+c1
+select * from l7;
+c1
+select * from l6;
+c1
+select * from l5;
+c1
+select * from l4;
+c1
+select * from l3;
+c1
+select * from l2;
+c1
+select * from l1;
+c1
+# Wait to ensure the evicition is complete
+select sleep(60);
+sleep(60)
+0
+connection con1;
+# Before fixed: WRONG--it returns 1 row
+# this should have returned 0 row because the transaction should see the old version.
+select * from t1;
+c1
+disconnect con1;
+disconnect con2;
+connection default;
+drop table if exists t1;
+# 500 drop;

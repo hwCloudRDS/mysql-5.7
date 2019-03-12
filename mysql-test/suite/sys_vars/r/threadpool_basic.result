@@ -1,0 +1,275 @@
+SET @start_global_value = @@global.threadpool_high_prio_tickets;
+set @@global.threadpool_high_prio_tickets=default;
+select @@global.threadpool_high_prio_tickets;
+@@global.threadpool_high_prio_tickets
+4294967295
+select @@session.threadpool_high_prio_tickets;
+ERROR HY000: Variable 'threadpool_high_prio_tickets' is a GLOBAL variable
+show global variables like 'threadpool_high_prio_tickets';
+Variable_name	Value
+threadpool_high_prio_tickets	4294967295
+select * from performance_schema.global_variables where variable_name='threadpool_high_prio_tickets';
+VARIABLE_NAME	VARIABLE_VALUE
+threadpool_high_prio_tickets	4294967295
+set global threadpool_high_prio_tickets=60;
+select @@global.threadpool_high_prio_tickets;
+@@global.threadpool_high_prio_tickets
+60
+set global threadpool_high_prio_tickets=4294967295;
+select @@global.threadpool_high_prio_tickets;
+@@global.threadpool_high_prio_tickets
+4294967295
+set global threadpool_high_prio_tickets=1.1;
+ERROR 42000: Incorrect argument type to variable 'threadpool_high_prio_tickets'
+set global threadpool_high_prio_tickets=1e1;
+ERROR 42000: Incorrect argument type to variable 'threadpool_high_prio_tickets'
+set global threadpool_high_prio_tickets="foo";
+ERROR 42000: Incorrect argument type to variable 'threadpool_high_prio_tickets'
+set global threadpool_high_prio_tickets=-1;
+Warnings:
+Warning	1292	Truncated incorrect threadpool_high_prio_tickets value: '-1'
+select @@global.threadpool_high_prio_tickets;
+@@global.threadpool_high_prio_tickets
+0
+set global threadpool_high_prio_tickets=10000000000;
+Warnings:
+Warning	1292	Truncated incorrect threadpool_high_prio_tickets value: '10000000000'
+select @@global.threadpool_high_prio_tickets;
+@@global.threadpool_high_prio_tickets
+4294967295
+set @@global.threadpool_high_prio_tickets = @start_global_value;
+SET @start_global_value = @@global.threadpool_idle_timeout;
+select @@global.threadpool_idle_timeout;
+@@global.threadpool_idle_timeout
+60
+select @@session.threadpool_idle_timeout;
+ERROR HY000: Variable 'threadpool_idle_timeout' is a GLOBAL variable
+show global variables like 'threadpool_idle_timeout';
+Variable_name	Value
+threadpool_idle_timeout	60
+show session variables like 'threadpool_idle_timeout';
+Variable_name	Value
+threadpool_idle_timeout	60
+select * from performance_schema.global_variables where variable_name='threadpool_idle_timeout';
+VARIABLE_NAME	VARIABLE_VALUE
+threadpool_idle_timeout	60
+select * from performance_schema.session_variables where variable_name='threadpool_idle_timeout';
+VARIABLE_NAME	VARIABLE_VALUE
+threadpool_idle_timeout	60
+set global threadpool_idle_timeout=60;
+select @@global.threadpool_idle_timeout;
+@@global.threadpool_idle_timeout
+60
+set global threadpool_idle_timeout=4294967295;
+select @@global.threadpool_idle_timeout;
+@@global.threadpool_idle_timeout
+4294967295
+set session threadpool_idle_timeout=1;
+ERROR HY000: Variable 'threadpool_idle_timeout' is a GLOBAL variable and should be set with SET GLOBAL
+set global threadpool_idle_timeout=1.1;
+ERROR 42000: Incorrect argument type to variable 'threadpool_idle_timeout'
+set global threadpool_idle_timeout=1e1;
+ERROR 42000: Incorrect argument type to variable 'threadpool_idle_timeout'
+set global threadpool_idle_timeout="foo";
+ERROR 42000: Incorrect argument type to variable 'threadpool_idle_timeout'
+set global threadpool_idle_timeout=-1;
+Warnings:
+Warning	1292	Truncated incorrect threadpool_idle_timeout value: '-1'
+select @@global.threadpool_idle_timeout;
+@@global.threadpool_idle_timeout
+1
+set global threadpool_idle_timeout=10000000000;
+Warnings:
+Warning	1292	Truncated incorrect threadpool_idle_timeout value: '10000000000'
+select @@global.threadpool_idle_timeout;
+@@global.threadpool_idle_timeout
+4294967295
+SET @@global.threadpool_idle_timeout = @start_global_value;
+SET @start_global_value = @@global.threadpool_max_threads;
+select @@global.threadpool_max_threads;
+@@global.threadpool_max_threads
+100000
+select @@session.threadpool_max_threads;
+ERROR HY000: Variable 'threadpool_max_threads' is a GLOBAL variable
+show global variables like 'threadpool_max_threads';
+Variable_name	Value
+threadpool_max_threads	100000
+show session variables like 'threadpool_max_threads';
+Variable_name	Value
+threadpool_max_threads	100000
+select * from performance_schema.global_variables where variable_name='threadpool_max_threads';
+VARIABLE_NAME	VARIABLE_VALUE
+threadpool_max_threads	100000
+select * from performance_schema.session_variables where variable_name='threadpool_max_threads';
+VARIABLE_NAME	VARIABLE_VALUE
+threadpool_max_threads	100000
+set global threadpool_max_threads=1;
+select @@global.threadpool_max_threads;
+@@global.threadpool_max_threads
+1
+set global threadpool_max_threads=65536;
+select @@global.threadpool_max_threads;
+@@global.threadpool_max_threads
+65536
+set global threadpool_max_threads=100001;
+Warnings:
+Warning	1292	Truncated incorrect threadpool_max_threads value: '100001'
+select @@global.threadpool_max_threads;
+@@global.threadpool_max_threads
+100000
+set session threadpool_max_threads=1;
+ERROR HY000: Variable 'threadpool_max_threads' is a GLOBAL variable and should be set with SET GLOBAL
+set global threadpool_max_threads=1.1;
+ERROR 42000: Incorrect argument type to variable 'threadpool_max_threads'
+set global threadpool_max_threads=1e1;
+ERROR 42000: Incorrect argument type to variable 'threadpool_max_threads'
+set global threadpool_max_threads="foo";
+ERROR 42000: Incorrect argument type to variable 'threadpool_max_threads'
+set global threadpool_max_threads=0;
+Warnings:
+Warning	1292	Truncated incorrect threadpool_max_threads value: '0'
+select @@global.threadpool_max_threads;
+@@global.threadpool_max_threads
+1
+set global threadpool_max_threads=10000000000;
+Warnings:
+Warning	1292	Truncated incorrect threadpool_max_threads value: '10000000000'
+select @@global.threadpool_max_threads;
+@@global.threadpool_max_threads
+100000
+SET @@global.threadpool_max_threads = @start_global_value;
+SET @start_global_value = @@global.threadpool_oversubscribe;
+select @@global.threadpool_oversubscribe;
+@@global.threadpool_oversubscribe
+3
+select @@session.threadpool_oversubscribe;
+ERROR HY000: Variable 'threadpool_oversubscribe' is a GLOBAL variable
+show global variables like 'threadpool_oversubscribe';
+Variable_name	Value
+threadpool_oversubscribe	3
+show session variables like 'threadpool_oversubscribe';
+Variable_name	Value
+threadpool_oversubscribe	3
+select * from performance_schema.global_variables where variable_name='threadpool_oversubscribe';
+VARIABLE_NAME	VARIABLE_VALUE
+threadpool_oversubscribe	3
+select * from performance_schema.session_variables where variable_name='threadpool_oversubscribe';
+VARIABLE_NAME	VARIABLE_VALUE
+threadpool_oversubscribe	3
+set global threadpool_oversubscribe=60;
+select @@global.threadpool_oversubscribe;
+@@global.threadpool_oversubscribe
+60
+set global threadpool_oversubscribe=1000;
+select @@global.threadpool_oversubscribe;
+@@global.threadpool_oversubscribe
+1000
+set session threadpool_oversubscribe=1;
+ERROR HY000: Variable 'threadpool_oversubscribe' is a GLOBAL variable and should be set with SET GLOBAL
+set global threadpool_oversubscribe=1.1;
+ERROR 42000: Incorrect argument type to variable 'threadpool_oversubscribe'
+set global threadpool_oversubscribe=1e1;
+ERROR 42000: Incorrect argument type to variable 'threadpool_oversubscribe'
+set global threadpool_oversubscribe="foo";
+ERROR 42000: Incorrect argument type to variable 'threadpool_oversubscribe'
+set global threadpool_oversubscribe=-1;
+Warnings:
+Warning	1292	Truncated incorrect threadpool_oversubscribe value: '-1'
+select @@global.threadpool_oversubscribe;
+@@global.threadpool_oversubscribe
+1
+set global threadpool_oversubscribe=10000000000;
+Warnings:
+Warning	1292	Truncated incorrect threadpool_oversubscribe value: '10000000000'
+select @@global.threadpool_oversubscribe;
+@@global.threadpool_oversubscribe
+1000
+set @@global.threadpool_oversubscribe = @start_global_value;
+SET @start_global_value = @@global.threadpool_size;
+select @@global.threadpool_size;
+@@global.threadpool_size
+#
+select @@session.threadpool_size;
+ERROR HY000: Variable 'threadpool_size' is a GLOBAL variable
+show global variables like 'threadpool_size';
+Variable_name	Value
+threadpool_size	#
+show session variables like 'threadpool_size';
+Variable_name	Value
+threadpool_size	#
+select * from performance_schema.global_variables where variable_name='threadpool_size';
+VARIABLE_NAME	VARIABLE_VALUE
+threadpool_size	#
+select * from performance_schema.session_variables where variable_name='threadpool_size';
+VARIABLE_NAME	VARIABLE_VALUE
+threadpool_size	#
+set global threadpool_size=1;
+select @@global.threadpool_size;
+@@global.threadpool_size
+1
+set global threadpool_size=128;
+select @@global.threadpool_size;
+@@global.threadpool_size
+128
+set session threadpool_size=1;
+ERROR HY000: Variable 'threadpool_size' is a GLOBAL variable and should be set with SET GLOBAL
+set global threadpool_size=1.1;
+ERROR 42000: Incorrect argument type to variable 'threadpool_size'
+set global threadpool_size=1e1;
+ERROR 42000: Incorrect argument type to variable 'threadpool_size'
+set global threadpool_size="foo";
+ERROR 42000: Incorrect argument type to variable 'threadpool_size'
+set global threadpool_size=-1;
+Warnings:
+Warning	1292	Truncated incorrect threadpool_size value: '-1'
+set global threadpool_size=100000;
+Warnings:
+Warning	1292	Truncated incorrect threadpool_size value: '100000'
+SET @@global.threadpool_size = @start_global_value;
+SET @start_global_value = @@global.threadpool_stall_limit;
+select @@global.threadpool_stall_limit;
+@@global.threadpool_stall_limit
+500
+select @@session.threadpool_stall_limit;
+ERROR HY000: Variable 'threadpool_stall_limit' is a GLOBAL variable
+show global variables like 'threadpool_stall_limit';
+Variable_name	Value
+threadpool_stall_limit	500
+show session variables like 'threadpool_stall_limit';
+Variable_name	Value
+threadpool_stall_limit	500
+select * from performance_schema.global_variables where variable_name='threadpool_stall_limit';
+VARIABLE_NAME	VARIABLE_VALUE
+threadpool_stall_limit	500
+select * from performance_schema.session_variables where variable_name='threadpool_stall_limit';
+VARIABLE_NAME	VARIABLE_VALUE
+threadpool_stall_limit	500
+set global threadpool_stall_limit=60;
+select @@global.threadpool_stall_limit;
+@@global.threadpool_stall_limit
+60
+set global threadpool_stall_limit=4294967295;
+select @@global.threadpool_stall_limit;
+@@global.threadpool_stall_limit
+4294967295
+set session threadpool_stall_limit=1;
+ERROR HY000: Variable 'threadpool_stall_limit' is a GLOBAL variable and should be set with SET GLOBAL
+set global threadpool_stall_limit=1.1;
+ERROR 42000: Incorrect argument type to variable 'threadpool_stall_limit'
+set global threadpool_stall_limit=1e1;
+ERROR 42000: Incorrect argument type to variable 'threadpool_stall_limit'
+set global threadpool_stall_limit="foo";
+ERROR 42000: Incorrect argument type to variable 'threadpool_stall_limit'
+set global threadpool_stall_limit=-1;
+Warnings:
+Warning	1292	Truncated incorrect threadpool_stall_limit value: '-1'
+select @@global.threadpool_stall_limit;
+@@global.threadpool_stall_limit
+10
+set global threadpool_stall_limit=10000000000;
+Warnings:
+Warning	1292	Truncated incorrect threadpool_stall_limit value: '10000000000'
+select @@global.threadpool_stall_limit;
+@@global.threadpool_stall_limit
+4294967295
+set @@global.threadpool_stall_limit = @start_global_value;

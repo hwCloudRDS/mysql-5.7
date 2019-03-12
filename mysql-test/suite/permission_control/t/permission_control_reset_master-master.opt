@@ -1,0 +1,3 @@
+--rds_permission_control=ON
+--rds_reserved_users=reserved_user1,reserved_user2,reserved_user3
+--log-bin=mysql-bin

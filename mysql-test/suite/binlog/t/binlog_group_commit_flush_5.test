@@ -1,0 +1,121 @@
+#
+# Test 4-Stage binlog group commit and global system dynamic
+# variable combine_engine_log_flush_threshold that controls
+# the behavior. In particular, test he different cases of
+# engine log flush stage leader joining binlog flush stage
+# leader.
+#
+--source include/not_embedded.inc
+--source include/not_valgrind.inc
+--source include/have_log_bin.inc
+--source include/have_debug.inc
+--source include/have_innodb.inc
+
+--echo #
+--echo # Test unit: 1
+--echo # 1. S1 leader did enter GC-S0 to flush engine log.
+--echo # 2. S0 leader did NOT enter GC-S0 and became a follower when entering S1.
+--echo # 3. S1 leader should flush engine log (for S0 leader).
+--echo #
+DROP TABLE IF EXISTS t1;
+DROP TABLE IF EXISTS t2;
+
+# Create tables
+CREATE TABLE t1(c1 INT) ENGINE= InnoDB;
+CREATE TABLE t2(c1 INT) ENGINE= InnoDB;
+
+# Create another connection
+connect (con1,localhost,root,,);
+connect (con2,localhost,root,,);
+
+# Switch to conn 1 (S1 leader)
+--connection con1
+--exec echo "wait" > $MYSQLTEST_VARDIR/tmp/mysqld.1.expect
+SET GLOBAL combine_engine_log_flush_threshold=1000;
+SET DEBUG_SYNC = "process_flush_engine_log_stage_as_leader SIGNAL leader_ready WAIT_FOR flush_englog";
+SET DEBUG_SYNC = "waiting_in_the_middle_of_binlog_flush_stage SIGNAL enter_group_commit WAIT_FOR flush_binlog";
+SET DEBUG_SYNC = "before_flush_engine_log_in_binlog_stage SIGNAL self_flush_englog WAIT_FOR self_flush_englog";
+--send INSERT INTO t1 VALUES(1)
+
+# Switch to conn 2 (S0 leader)
+--connection con2
+SET DEBUG_SYNC = "now WAIT_FOR leader_ready"; # MUST Do this before setting combine_engine_log_flush_threshold
+SET SESSION DEBUG="+d,crash_after_flush_engine_log"; # conn 1 should NOT crash here since it's skipping GC-S0
+SET DEBUG_SYNC = "waiting_to_enter_flush_engine_stage SIGNAL flush_englog WAIT_FOR enter_group_commit";
+SET DEBUG_SYNC = "wait_as_follower SIGNAL flush_binlog";
+SET GLOBAL combine_engine_log_flush_threshold=0;
+INSERT INTO t2 VALUES(1);
+
+--connection con1
+--reap
+
+--disconnect con1
+--disconnect con2
+
+# Restart server
+--connection default
+--source include/restart_mysqld.inc
+
+SELECT count(*) FROM t1 WHERE c1=1;
+SELECT count(*) FROM t2 WHERE c1=1;
+
+# Cleanup
+DROP TABLE t1, t2;
+
+#################################################################
+
+# Restart server
+--connection default
+--source include/restart_mysqld.inc
+
+--echo #
+--echo # Test unit: 2
+--echo # 1. S1 leader did NOT enter GC-S0 to flush engine log.
+--echo # 2. S0 leader did enter GC-S0 and became a follower when entering S1.
+--echo # 3. S1 leader should still flush engine log (for itself).
+--echo #
+
+# Create tables
+CREATE TABLE t1(c1 INT) ENGINE= InnoDB;
+CREATE TABLE t2(c1 INT) ENGINE= InnoDB;
+
+# Create another connection
+connect (con1,localhost,root,,);
+connect (con2,localhost,root,,);
+
+# Switch to conn 1 (S1 leader)
+--connection con1
+--exec echo "wait" > $MYSQLTEST_VARDIR/tmp/mysqld.1.expect
+SET GLOBAL combine_engine_log_flush_threshold=0;
+# should NOT crash in process_flush_engine_log_stage_as_leader since it's skipping GC-S0
+SET SESSION DEBUG="+d,process_flush_engine_log_stage_as_leader";
+SET DEBUG_SYNC = "waiting_to_enter_flush_binlog_stage SIGNAL leader_ready";
+SET DEBUG_SYNC = "waiting_in_the_middle_of_binlog_flush_stage SIGNAL enter_gc WAIT_FOR flush_englog_in_s1";
+SET DEBUG_SYNC = "before_flush_engine_log_in_binlog_stage SIGNAL self_flush_englog WAIT_FOR self_flush_englog";
+--send INSERT INTO t1 VALUES(1)
+
+# Switch to conn 2 (S0 leader)
+--connection con2
+SET DEBUG_SYNC = "now WAIT_FOR leader_ready"; # MUST Do this before setting combine_engine_log_flush_threshold
+SET DEBUG_SYNC = "waiting_to_enter_flush_engine_stage SIGNAL process_s0 WAIT_FOR enter_gc";
+SET DEBUG_SYNC = "process_flush_engine_log_stage_as_leader WAIT_FOR process_s0"; #signal from itself
+SET DEBUG_SYNC = "wait_as_follower SIGNAL flush_englog_in_s1";
+SET GLOBAL combine_engine_log_flush_threshold=1000;
+INSERT INTO t2 VALUES(1);
+
+--connection con1
+--reap
+
+--disconnect con1
+--disconnect con2
+
+# Restart server
+--connection default
+--source include/restart_mysqld.inc
+
+SELECT count(*) FROM t1 WHERE c1=1;
+SELECT count(*) FROM t2 WHERE c1=1;
+
+# Cleanup
+DROP TABLE t1, t2;
+

@@ -1,0 +1,48 @@
+--source include/have_debug_sync.inc
+--source include/have_binlog_format_mixed.inc
+--source include/master-slave.inc
+
+--let $rpl_gtid_mode= on
+--let $rpl_set_enforce_gtid_consistency= 1
+--source include/rpl_set_gtid_mode.inc
+
+# for rpl_sync.inc
+--let $use_gtids= 1
+
+connect(master2,127.0.0.1,root,,test,$MASTER_MYPORT,);
+
+--connection master
+create table t1(c1 int);
+create table t2(c1 int);
+insert into t1(c1) values (1),(2),(3);
+--source include/rpl_sync.inc
+
+SET DEBUG_SYNC= 'waiting_in_the_middle_of_binlog_flush_stage SIGNAL leader WAIT_FOR follower';
+send create table t3(c1 int) select * from t1;
+
+--connection master2
+SET DEBUG_SYNC= 'now WAIT_FOR leader';
+SET DEBUG_SYNC= 'wait_as_follower SIGNAL follower';
+insert into t2(c1) values (11),(12),(13);
+
+--connection master
+--reap
+--source include/rpl_sync.inc
+
+# check the binlog
+--let $last_log= query_get_value(show master status, File, 1)
+--replace_column 1 # 2 # 4 # 5 #
+--replace_regex /[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}/#/ /xid=[0-9]+/xid=#/ /table_id: [0-9]+/table_id: #/
+--eval show binlog events in '$last_log' limit 2, 16
+
+
+disconnect master2;
+drop table t3;
+drop table t2;
+drop table t1;
+
+--let $rpl_gtid_mode= off
+--let $rpl_set_enforce_gtid_consistency= 0
+--source include/rpl_set_gtid_mode.inc
+--let $rpl_skip_sync= 1
+--source include/rpl_end.inc

@@ -1,0 +1,155 @@
+USE mysql;
+DROP TABLE IF EXISTS user_backup;
+CREATE TABLE user_backup LIKE user;
+INSERT INTO user_backup SELECT * FROM user;
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, RELOAD, PROCESS, REFERENCES, INDEX, ALTER, SHOW DATABASES, CREATE TEMPORARY TABLES, LOCK TABLES, EXECUTE, REPLICATION SLAVE, REPLICATION CLIENT, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT, TRIGGER ON *.* TO 'root1'@'%' IDENTIFIED BY '123456' WITH GRANT OPTION;
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, RELOAD, PROCESS, REFERENCES, INDEX, ALTER, SHOW DATABASES, CREATE TEMPORARY TABLES, LOCK TABLES, EXECUTE, REPLICATION SLAVE, REPLICATION CLIENT, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT, TRIGGER ON *.* TO 'reserved_user1'@'%' IDENTIFIED BY '123456' WITH GRANT OPTION;
+GRANT ALL PRIVILEGES ON *.* TO 'super'@'%' IDENTIFIED BY '123456' WITH GRANT OPTION;
+show variables like 'rds%';
+Variable_name	Value
+rds_permission_control	ON
+rds_reserved_users	reserved_user1,reserved_user2,reserved_user3
+ALTER TABLE user ADD test_alter INT NOT NULL;
+ERROR 42000: Access denied for user 'root1'@'localhost' to database 'mysql'
+desc user;
+Field	Type	Null	Key	Default	Extra
+Host	char(60)	NO	PRI		
+User	char(16)	NO	PRI		
+Password	char(41)	NO			
+Select_priv	enum('N','Y')	NO		N	
+Insert_priv	enum('N','Y')	NO		N	
+Update_priv	enum('N','Y')	NO		N	
+Delete_priv	enum('N','Y')	NO		N	
+Create_priv	enum('N','Y')	NO		N	
+Drop_priv	enum('N','Y')	NO		N	
+Reload_priv	enum('N','Y')	NO		N	
+Shutdown_priv	enum('N','Y')	NO		N	
+Process_priv	enum('N','Y')	NO		N	
+File_priv	enum('N','Y')	NO		N	
+Grant_priv	enum('N','Y')	NO		N	
+References_priv	enum('N','Y')	NO		N	
+Index_priv	enum('N','Y')	NO		N	
+Alter_priv	enum('N','Y')	NO		N	
+Show_db_priv	enum('N','Y')	NO		N	
+Super_priv	enum('N','Y')	NO		N	
+Create_tmp_table_priv	enum('N','Y')	NO		N	
+Lock_tables_priv	enum('N','Y')	NO		N	
+Execute_priv	enum('N','Y')	NO		N	
+Repl_slave_priv	enum('N','Y')	NO		N	
+Repl_client_priv	enum('N','Y')	NO		N	
+Create_view_priv	enum('N','Y')	NO		N	
+Show_view_priv	enum('N','Y')	NO		N	
+Create_routine_priv	enum('N','Y')	NO		N	
+Alter_routine_priv	enum('N','Y')	NO		N	
+Create_user_priv	enum('N','Y')	NO		N	
+Event_priv	enum('N','Y')	NO		N	
+Trigger_priv	enum('N','Y')	NO		N	
+Create_tablespace_priv	enum('N','Y')	NO		N	
+ssl_type	enum('','ANY','X509','SPECIFIED')	NO			
+ssl_cipher	blob	NO		NULL	
+x509_issuer	blob	NO		NULL	
+x509_subject	blob	NO		NULL	
+max_questions	int(11) unsigned	NO		0	
+max_updates	int(11) unsigned	NO		0	
+max_connections	int(11) unsigned	NO		0	
+max_user_connections	int(11) unsigned	NO		0	
+plugin	char(64)	YES		mysql_native_password	
+authentication_string	text	YES		NULL	
+password_expired	enum('N','Y')	NO		N	
+ALTER TABLE user ADD test_alter1 INT NOT NULL;
+desc user;
+Field	Type	Null	Key	Default	Extra
+Host	char(60)	NO	PRI		
+User	char(16)	NO	PRI		
+Password	char(41)	NO			
+Select_priv	enum('N','Y')	NO		N	
+Insert_priv	enum('N','Y')	NO		N	
+Update_priv	enum('N','Y')	NO		N	
+Delete_priv	enum('N','Y')	NO		N	
+Create_priv	enum('N','Y')	NO		N	
+Drop_priv	enum('N','Y')	NO		N	
+Reload_priv	enum('N','Y')	NO		N	
+Shutdown_priv	enum('N','Y')	NO		N	
+Process_priv	enum('N','Y')	NO		N	
+File_priv	enum('N','Y')	NO		N	
+Grant_priv	enum('N','Y')	NO		N	
+References_priv	enum('N','Y')	NO		N	
+Index_priv	enum('N','Y')	NO		N	
+Alter_priv	enum('N','Y')	NO		N	
+Show_db_priv	enum('N','Y')	NO		N	
+Super_priv	enum('N','Y')	NO		N	
+Create_tmp_table_priv	enum('N','Y')	NO		N	
+Lock_tables_priv	enum('N','Y')	NO		N	
+Execute_priv	enum('N','Y')	NO		N	
+Repl_slave_priv	enum('N','Y')	NO		N	
+Repl_client_priv	enum('N','Y')	NO		N	
+Create_view_priv	enum('N','Y')	NO		N	
+Show_view_priv	enum('N','Y')	NO		N	
+Create_routine_priv	enum('N','Y')	NO		N	
+Alter_routine_priv	enum('N','Y')	NO		N	
+Create_user_priv	enum('N','Y')	NO		N	
+Event_priv	enum('N','Y')	NO		N	
+Trigger_priv	enum('N','Y')	NO		N	
+Create_tablespace_priv	enum('N','Y')	NO		N	
+ssl_type	enum('','ANY','X509','SPECIFIED')	NO			
+ssl_cipher	blob	NO		NULL	
+x509_issuer	blob	NO		NULL	
+x509_subject	blob	NO		NULL	
+max_questions	int(11) unsigned	NO		0	
+max_updates	int(11) unsigned	NO		0	
+max_connections	int(11) unsigned	NO		0	
+max_user_connections	int(11) unsigned	NO		0	
+plugin	char(64)	YES		mysql_native_password	
+authentication_string	text	YES		NULL	
+password_expired	enum('N','Y')	NO		N	
+test_alter1	int(11)	NO		NULL	
+ALTER TABLE user ADD test_alter2 INT NOT NULL;
+desc user;
+Field	Type	Null	Key	Default	Extra
+Host	char(60)	NO	PRI		
+User	char(16)	NO	PRI		
+Password	char(41)	NO			
+Select_priv	enum('N','Y')	NO		N	
+Insert_priv	enum('N','Y')	NO		N	
+Update_priv	enum('N','Y')	NO		N	
+Delete_priv	enum('N','Y')	NO		N	
+Create_priv	enum('N','Y')	NO		N	
+Drop_priv	enum('N','Y')	NO		N	
+Reload_priv	enum('N','Y')	NO		N	
+Shutdown_priv	enum('N','Y')	NO		N	
+Process_priv	enum('N','Y')	NO		N	
+File_priv	enum('N','Y')	NO		N	
+Grant_priv	enum('N','Y')	NO		N	
+References_priv	enum('N','Y')	NO		N	
+Index_priv	enum('N','Y')	NO		N	
+Alter_priv	enum('N','Y')	NO		N	
+Show_db_priv	enum('N','Y')	NO		N	
+Super_priv	enum('N','Y')	NO		N	
+Create_tmp_table_priv	enum('N','Y')	NO		N	
+Lock_tables_priv	enum('N','Y')	NO		N	
+Execute_priv	enum('N','Y')	NO		N	
+Repl_slave_priv	enum('N','Y')	NO		N	
+Repl_client_priv	enum('N','Y')	NO		N	
+Create_view_priv	enum('N','Y')	NO		N	
+Show_view_priv	enum('N','Y')	NO		N	
+Create_routine_priv	enum('N','Y')	NO		N	
+Alter_routine_priv	enum('N','Y')	NO		N	
+Create_user_priv	enum('N','Y')	NO		N	
+Event_priv	enum('N','Y')	NO		N	
+Trigger_priv	enum('N','Y')	NO		N	
+Create_tablespace_priv	enum('N','Y')	NO		N	
+ssl_type	enum('','ANY','X509','SPECIFIED')	NO			
+ssl_cipher	blob	NO		NULL	
+x509_issuer	blob	NO		NULL	
+x509_subject	blob	NO		NULL	
+max_questions	int(11) unsigned	NO		0	
+max_updates	int(11) unsigned	NO		0	
+max_connections	int(11) unsigned	NO		0	
+max_user_connections	int(11) unsigned	NO		0	
+plugin	char(64)	YES		mysql_native_password	
+authentication_string	text	YES		NULL	
+password_expired	enum('N','Y')	NO		N	
+test_alter1	int(11)	NO		NULL	
+test_alter2	int(11)	NO		NULL	
+DROP TABLE IF EXISTS user;
+RENAME TABLE user_backup TO user;

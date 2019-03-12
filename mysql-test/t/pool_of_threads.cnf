@@ -1,0 +1,8 @@
+!include include/default_my.cnf
+
+[mysqld.1]
+loose-threadpool_size= 2
+loose-threadpool_max_threads= 2
+
+[client]
+connect-timeout= 1

@@ -1,0 +1,63 @@
+SELECT @@global.combine_engine_log_flush_threshold;
+@@global.combine_engine_log_flush_threshold
+4
+SHOW GLOBAL VARIABLES LIKE 'combine_engine_log_flush_threshold';
+Variable_name	Value
+combine_engine_log_flush_threshold	4
+SELECT * FROM performance_schema.global_variables WHERE variable_name='combine_engine_log_flush_threshold';
+VARIABLE_NAME	VARIABLE_VALUE
+combine_engine_log_flush_threshold	4
+#It is not a session variable.
+SELECT @@session.combine_engine_log_flush_threshold;
+ERROR HY000: Variable 'combine_engine_log_flush_threshold' is a GLOBAL variable
+SHOW SESSION VARIABLES LIKE 'combine_engine_log_flush_threshold';
+Variable_name	Value
+combine_engine_log_flush_threshold	4
+SELECT * FROM performance_schema.session_variables WHERE variable_name='combine_engine_log_flush_threshold';
+VARIABLE_NAME	VARIABLE_VALUE
+combine_engine_log_flush_threshold	4
+SET SESSION combine_engine_log_flush_threshold= 1;
+ERROR HY000: Variable 'combine_engine_log_flush_threshold' is a GLOBAL variable and should be set with SET GLOBAL
+#Test setting the variable to various values.
+#Integer values, with range [0 - 16384]
+SET GLOBAL combine_engine_log_flush_threshold= 0;
+SELECT @@global.combine_engine_log_flush_threshold;
+@@global.combine_engine_log_flush_threshold
+0
+SET GLOBAL combine_engine_log_flush_threshold= 1;
+SELECT @@global.combine_engine_log_flush_threshold;
+@@global.combine_engine_log_flush_threshold
+1
+SET GLOBAL combine_engine_log_flush_threshold= 1000;
+SELECT @@global.combine_engine_log_flush_threshold;
+@@global.combine_engine_log_flush_threshold
+1000
+SET GLOBAL combine_engine_log_flush_threshold= 16384;
+SELECT @@global.combine_engine_log_flush_threshold;
+@@global.combine_engine_log_flush_threshold
+16384
+#Test for invalid value larger than max allowable value.
+#Should truncate to max allowable value.
+SET GLOBAL combine_engine_log_flush_threshold= 16385;
+Warnings:
+Warning	1292	Truncated incorrect combine_engine_log_flush_thresho value: '16385'
+SELECT @@global.combine_engine_log_flush_threshold;
+@@global.combine_engine_log_flush_threshold
+16384
+#Test for invalid value smaller than min allowable value.
+#Should set to min allowable value.
+SET GLOBAL combine_engine_log_flush_threshold= -1;
+Warnings:
+Warning	1292	Truncated incorrect combine_engine_log_flush_thresho value: '-1'
+SELECT @@global.combine_engine_log_flush_threshold;
+@@global.combine_engine_log_flush_threshold
+0
+#Test for invalid statement for setting the
+#global variable.
+SET combine_engine_log_flush_threshold= 1;
+ERROR HY000: Variable 'combine_engine_log_flush_threshold' is a GLOBAL variable and should be set with SET GLOBAL
+#Test for DEFAULT value.
+SET GLOBAL combine_engine_log_flush_threshold= DEFAULT;
+SELECT @@global.combine_engine_log_flush_threshold;
+@@global.combine_engine_log_flush_threshold
+4

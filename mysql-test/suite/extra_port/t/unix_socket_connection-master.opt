@@ -1,0 +1,5 @@
+--extra_port=1300
+--max_connections=5
+--extra_max_connections=5
+--rds_permission_control=ON
+--rds_reserved_users=reserved_user

@@ -1,0 +1,74 @@
+USE mysql;
+--echo
+--echo # ----------------------------------------------------------------------
+--echo
+
+--echo # Setup
+
+--disable_warnings
+DROP TABLE IF EXISTS user_backup;
+--enable_warnings
+CREATE TABLE user_backup LIKE user;
+INSERT INTO user_backup SELECT * FROM user;
+
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, RELOAD, PROCESS, REFERENCES, INDEX, ALTER, SHOW DATABASES, CREATE TEMPORARY TABLES, LOCK TABLES, EXECUTE, REPLICATION SLAVE, REPLICATION CLIENT, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT, TRIGGER ON *.* TO 'reserved_user'@'%' IDENTIFIED BY '123456' WITH GRANT OPTION;
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, RELOAD, PROCESS, REFERENCES, INDEX, ALTER, SHOW DATABASES, CREATE TEMPORARY TABLES, LOCK TABLES, EXECUTE, REPLICATION SLAVE, REPLICATION CLIENT, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT, TRIGGER ON *.* TO 'normal_user'@'%' IDENTIFIED BY '123456' WITH GRANT OPTION;
+GRANT ALL PRIVILEGES ON *.* TO 'super'@'%' IDENTIFIED BY '123456' WITH GRANT OPTION;
+
+--echo # When the parameter extra_port is not zero, the extra port feature is opened and unix socket still work as before.
+
+show variables like 'rds_reserved_users';
+show variables like 'extra_port';
+show variables like 'extra_max_connections';
+
+
+
+--echo
+--echo # ----------------------------------------------------------------------
+--echo
+--echo # Test 1: The reserved user can connect the database through the unix socket.
+
+connect(res_conn1,localhost,reserved_user,123456,mysql,1300);
+select 1;
+
+
+--echo
+--echo # ----------------------------------------------------------------------
+--echo
+
+--echo # Test 2: The non-reserved user can connect the database through the unix socket.
+
+connect(nor_conn1,localhost,normal_user,123456,mysql,1300);
+select 2;
+
+--echo
+--echo # ----------------------------------------------------------------------
+--echo
+
+--echo # Test 3: The number of sessions connected by unix socket can be up to max_connections.
+
+connect(res_conn2,localhost,reserved_user,123456,mysql,1300);
+select 2;
+connect(res_conn3,localhost,reserved_user,123456,mysql,1300);
+select 3;
+select count(*) from information_schema.PROCESSLIST where user in ('root','normal_user','reserved_user');
+
+--disable_query_log
+--error 1040
+connect(res_conn4,localhost,reserved_user,123456,mysql,1300);
+--enable_query_log
+
+
+--echo
+--echo # ----------------------------------------------------------------------
+--echo
+
+--echo # Cleanup
+
+connection default;
+--disable_warnings
+DROP USER reserved_user,normal_user,super;
+DELETE FROM user;
+INSERT INTO user SELECT * FROM user_backup;
+DROP TABLE user_backup;
+--enable_warnings

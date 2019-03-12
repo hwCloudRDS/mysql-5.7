@@ -1,0 +1,134 @@
+call mtr.add_suppression("default_storage_engine is set to a disabled storage engine memory.");
+SET SESSION sql_mode = 'NO_AUTO_CREATE_USER';
+SHOW VARIABLES LIKE 'sql_mode';
+Variable_name	Value
+sql_mode	NO_AUTO_CREATE_USER
+SHOW VARIABLES LIKE 'disabled_storage_engines';
+Variable_name	Value
+disabled_storage_engines	memory,blackhole,disabledfake
+
+---------------------
+Enabled default tests
+---------------------
+SET SESSION default_storage_engine=myisam;
+SHOW VARIABLES LIKE 'default_storage_engine';
+Variable_name	Value
+default_storage_engine	MyISAM
+
+Test an enabled default engine
+CREATE TABLE t (c int);
+SELECT TABLE_NAME,ENGINE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='t';
+TABLE_NAME	ENGINE
+t	MyISAM
+DROP TABLE t;
+
+Test a disabled engine gets substituted to the default
+CREATE TABLE t (c int) ENGINE=memory;
+Warnings:
+Note	3161	Storage engine MEMORY is disabled (Table creation is disallowed).
+Note	1266	Using storage engine MyISAM for table 't'
+SELECT TABLE_NAME,ENGINE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='t';
+TABLE_NAME	ENGINE
+t	MyISAM
+DROP TABLE t;
+
+Test an invalid and disabled engine gets substituted to the default
+CREATE TABLE t (c int) ENGINE=disabledfake;
+Warnings:
+Warning	1286	Unknown storage engine 'disabledfake'
+Warning	1266	Using storage engine MyISAM for table 't'
+SELECT TABLE_NAME,ENGINE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='t';
+TABLE_NAME	ENGINE
+t	MyISAM
+DROP TABLE t;
+
+Test alter table to a disabled engine
+CREATE TABLE t (c int) ENGINE=innodb;
+ALTER TABLE t ENGINE=memory;
+ERROR HY000: Storage engine MEMORY is disabled (Table creation is disallowed).
+SELECT TABLE_NAME,ENGINE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='t';
+TABLE_NAME	ENGINE
+t	InnoDB
+DROP TABLE t;
+
+Test alter table to an invalid and disabled engine
+CREATE TABLE t (c int) ENGINE=innodb;
+ALTER TABLE t ENGINE=disabledfake;
+Warnings:
+Warning	1286	Unknown storage engine 'disabledfake'
+SELECT TABLE_NAME,ENGINE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='t';
+TABLE_NAME	ENGINE
+t	InnoDB
+DROP TABLE t;
+
+----------------------
+Disabled default tests
+----------------------
+SET SESSION default_storage_engine=memory;
+SHOW WARNINGS;
+Level	Code	Message
+SHOW VARIABLES LIKE 'default_storage_engine';
+Variable_name	Value
+default_storage_engine	MEMORY
+
+Test a disabled default engine
+CREATE TABLE t (c int);
+ERROR HY000: Storage engine MEMORY is disabled (Table creation is disallowed).
+
+Test an invalid engine when the default storage engine is disabled
+CREATE TABLE t (c int) ENGINE=fake;
+ERROR HY000: Storage engine MEMORY is disabled (Table creation is disallowed).
+SHOW WARNINGS;
+Level	Code	Message
+Warning	1286	Unknown storage engine 'fake'
+Warning	1266	Using storage engine MEMORY for table 't'
+Note	3161	Storage engine MEMORY is disabled (Table creation is disallowed).
+Error	3161	Storage engine MEMORY is disabled (Table creation is disallowed).
+
+Test an invalid and disabled engine when the default storage engine is disabled
+CREATE TABLE t (c int) ENGINE=disabledfake;
+ERROR HY000: Storage engine MEMORY is disabled (Table creation is disallowed).
+SHOW WARNINGS;
+Level	Code	Message
+Warning	1286	Unknown storage engine 'disabledfake'
+Warning	1266	Using storage engine MEMORY for table 't'
+Note	3161	Storage engine MEMORY is disabled (Table creation is disallowed).
+Error	3161	Storage engine MEMORY is disabled (Table creation is disallowed).
+
+Test a valid and enabled engine when the default storage engine is disabled 
+CREATE TABLE t (c int) ENGINE=innodb;
+SELECT TABLE_NAME,ENGINE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='t';
+TABLE_NAME	ENGINE
+t	InnoDB
+DROP TABLE t;
+
+Test alter table to a disabled engine when the default storage engine is disabled
+CREATE TABLE t (c int) ENGINE=innodb;
+ALTER TABLE t ENGINE=blackhole;
+ERROR HY000: Storage engine BLACKHOLE is disabled (Table creation is disallowed).
+SHOW WARNINGS;
+Level	Code	Message
+Error	3161	Storage engine BLACKHOLE is disabled (Table creation is disallowed).
+SELECT TABLE_NAME,ENGINE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='t';
+TABLE_NAME	ENGINE
+t	InnoDB
+DROP TABLE t;
+
+Test alter table to an invalid and disabled engine when the default storage engine is disabled
+CREATE TABLE t (c int) ENGINE=innodb;
+ALTER TABLE t ENGINE=disabledfake;
+Warnings:
+Warning	1286	Unknown storage engine 'disabledfake'
+SELECT TABLE_NAME,ENGINE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='t';
+TABLE_NAME	ENGINE
+t	InnoDB
+DROP TABLE t;
+
+Test alter table to a valid and enabled engine when the default storage engine is disabled
+CREATE TABLE t (c int) ENGINE=innodb;
+ALTER TABLE t ENGINE=myisam;
+SELECT TABLE_NAME,ENGINE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='t';
+TABLE_NAME	ENGINE
+t	MyISAM
+DROP TABLE t;
+

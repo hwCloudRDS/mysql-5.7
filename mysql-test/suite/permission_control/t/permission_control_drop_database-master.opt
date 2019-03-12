@@ -1,0 +1,4 @@
+--rds_permission_control=ON
+--rds_reserved_users=reserved_user1,reserved_user2,reserved_user3
+--slow_query_log=OFF
+--general_log=OFF

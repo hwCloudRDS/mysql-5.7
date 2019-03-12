@@ -1,0 +1,53 @@
+include/master-slave.inc
+Warnings:
+Note	####	Sending passwords in plain text without SSL/TLS is extremely insecure.
+Note	####	Storing MySQL user name or password information in the master info repository is not secure and is therefore not recommended. Please consider using the USER and PASSWORD connection options for START SLAVE; see the 'START SLAVE Syntax' in the MySQL Manual for more information.
+[connection master]
+include/rpl_set_gtid_mode.inc [on on servers 1,2]
+
+Validate env
+------------
+show variables like 'gtid_mode';
+Variable_name	Value
+gtid_mode	ON
+show variables like 'enforce_gtid_consistency';
+Variable_name	Value
+enforce_gtid_consistency	ON
+show variables like 'gtid_next';
+Variable_name	Value
+gtid_next	AUTOMATIC
+show variables like 'gtid_mode';
+Variable_name	Value
+gtid_mode	ON
+
+Setup data
+----------
+create table t1(c1 int);
+insert into t1(c1) values (1),(2),(3);
+include/rpl_sync.inc
+
+Test 1: CTS is allowed
+----------------------
+create table t2(c1 int) select * from t1;
+include/rpl_sync.inc
+select * from t2;
+c1
+1
+2
+3
+
+Test 2: CTS blocked for tmp table in a transaction
+--------------------------------------------------
+begin;
+create temporary table tt(c1 int) select * from t1;
+ERROR HY000: Statement violates GTID consistency: CREATE TEMPORARY TABLE and DROP TEMPORARY TABLE can only be executed outside transactional context.  These statements are also not allowed in a function or trigger because functions and triggers are also considered to be multi-statement transactions.
+rollback;
+include/rpl_sync.inc
+
+Clean up
+--------
+drop table t2;
+drop table t1;
+include/rpl_sync.inc
+include/rpl_set_gtid_mode.inc [off on servers 1,2]
+include/rpl_end.inc

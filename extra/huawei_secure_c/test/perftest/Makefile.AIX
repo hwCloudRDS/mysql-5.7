@@ -1,0 +1,18 @@
+VPATH =  ../../src
+
+CASEOBJS=memcpy_s.o memset_s.o strcpy_s.o strncpy_s.o strcat_s.o strncat_s.o testperf.o sprintfod.o securecutil.o secureprintoutput_a.o sprintf_s.o vsprintf_s.o wcscpy_s.o wcsncpy_s.o wcscat_s.o wcsncat_s.o
+
+# if you don't have make, you can use the following command:
+# gcc  -I ../../include -I ../../src -DNDEBUG  memcpy_s.c memset_s.c strcpy_s.c strncpy_s.c strcat_s.c strncat_s.c t.c sprintfod.c securecutil.c secureprintoutput_a.c sprintf_s.c vsprintf_s.c -O2 -o test
+
+CC = gcc
+# if you want to test the performance of memcpy_sp and memset_sp, define TEST_MEMCPY_BENCHMARK by "-DTEST_MEMCPY_BENCHMARK".
+CFLAG = -I ../../include -I ../../src -DNDEBUG -O2 -DTEST_LLU -DTEST_MEMCPY_BENCHMARK -DPERF_TEST_AS_MAIN
+
+all: $(CASEOBJS)
+	$(CC)  $(CFLAG) -o testperf $(CASEOBJS)
+.c.o:
+	$(CC) $(CFLAG) -c $< 
+clean:
+	rm *.o testperf
+	
